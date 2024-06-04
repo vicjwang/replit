@@ -22,12 +22,12 @@ SHOW_TICKERS = defaultdict(
     #ABNB=1,
     #AMZN=1,
     #CRM=1,
-    CRWD=1,
+#    CRWD=1,
     #DDOG=1,
     #GOOG=1,
     #OKTA=1,
     #META=1,
-    #MDB=1,
+    MDB=1,
     #GME=1,
     #MSFT=1,
     #MSTR=1,
@@ -37,7 +37,7 @@ SHOW_TICKERS = defaultdict(
     #SQ=1,
     #TSLA=1,
     #TWLO=1,
-    TSM=1,
+#    TSM=1,
     TXN=1,
   )
 )
@@ -115,7 +115,7 @@ def fetch_raw_pfcf(symbol, company):
 
 
 def fetch_raw_historical(url):
-  
+
   headers = {
       'User-Agent': (
           'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
@@ -130,13 +130,13 @@ def fetch_raw_historical(url):
 
 def graph_historical_pe(symbol, company, start_date=None, ax=None):
   column_names = ['Date', 'Price', 'EPS', 'PE']
-  data = fetch_raw_pe(symbol, company)  
+  data = fetch_raw_pe(symbol, company)
   data.columns = column_names
 
   date = data['Date'].apply(pd.to_datetime)
   pe = data['PE'].apply(pd.to_numeric)
   pe_mean = round(pe.mean(), 2)
-  
+
   print('Last earnings date:', date.iloc[0])
   print('Last earnings PE:', pe.iloc[0])
   print('Historical mean PE:', pe_mean)
@@ -155,9 +155,9 @@ def graph_historical(x, y, mean, title, ax):
 
 
 def main():
-  
+
   tickers = sorted([ticker for ticker in TICKERS if SHOW_TICKERS[ticker.symbol] == 1], key=lambda t: t.symbol)
-  
+
   start_date = START_DATE
   PLT_WIDTH = 13.5
   PLT_HEIGHT = 2.5
@@ -165,7 +165,7 @@ def main():
   fig = plt.figure(figsize=(PLT_WIDTH, PLT_HEIGHT * 6)) if RENDER_FIG else None
 
   contracts = []
-  
+
   for i, ticker in enumerate(tickers):
     printout('#' * 70)
     print(ticker)
@@ -178,13 +178,13 @@ def main():
       pass
 
     expiry_days = EXPIRY_DAYS
-    
+
     if next_earnings_date and SHOULD_AVOID_EARNINGS:
       delta_days = (next_earnings_date - datetime.now()).days
       if delta_days > 1:
         expiry_days = delta_days
-    
-    overpriced_contracts = determine_overpriced_option_contracts(ticker.symbol, start_date, ax, expiry_days)
+
+    overpriced_contracts = determine_overpriced_option_contracts(ticker.symbol, start_date, ax)
 
     for contract in overpriced_contracts:
       ticker = contract['root_symbol']
@@ -195,7 +195,7 @@ def main():
 
     contracts += overpriced_contracts
     #graph_historical_pe(ticker.symbol, ticker.name, start_date, ax)
-    
+
     printout()
     printout()
 

@@ -18,26 +18,26 @@ SHOW_GRAPH = False
 SHOW_TICKERS = defaultdict(
   bool,
   dict(
-    #AAPL=1,
-    #ABNB=1,
-    #AMZN=1,
-    #CRM=1,
-#    CRWD=1,
-    #DDOG=1,
-    #GOOG=1,
-    #OKTA=1,
-    #META=1,
+    AAPL=1,
+    ABNB=1,
+    AMZN=1,
+    CRM=1,
+    CRWD=1,
+    DDOG=1,
+    GOOG=1,
+    OKTA=1,
+    META=1,
     MDB=1,
     #GME=1,
-    #MSFT=1,
+    MSFT=1,
     #MSTR=1,
     #NVDA=1,
-    #SHOP=1,
-    #SNAP=1,
-    #SQ=1,
-    #TSLA=1,
-    #TWLO=1,
-#    TSM=1,
+    SHOP=1,
+    SNAP=1,
+    SQ=1,
+    TSLA=1,
+    TWLO=1,
+    TSM=1,
     TXN=1,
   )
 )
@@ -205,7 +205,8 @@ def main():
     desc = contract['description']
     last = contract['last']
     annual_roi = contract['annual_roi']
-    print(f' {desc} last={last} annual_roi={round(annual_roi*100, 2)}%')
+    delta = contract['greeks']['delta']
+    print(f' {desc} last={last} annual_roi={round(annual_roi*100, 2)}% delta={round(delta, 4)}')
 
 
   if SHOW_GRAPH:

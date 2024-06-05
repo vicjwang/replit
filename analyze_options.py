@@ -138,8 +138,9 @@ def pprint_contract(contract):
   bid = contract['bid']
   ask = contract['ask']
   last = contract['last']
+  annual_roi = contract['annual_roi']
   printout(contract['description'])
-  printout(f' bid={bid}, ask={ask} last={last} delta={round(delta, 4)}')
+  printout(f' bid={bid}, ask={ask} last={last} delta={round(delta, 4)} annual_roi={round(annual_roi, 2)}')
 
   # TODO: how to print?
   #printout(f' is strike higher than within 1% of 52 week high? {strike > high_52*.99}')
@@ -160,7 +161,7 @@ def should_sell_cc(contract, exp_strike):
   delta = contract['greeks']['delta']
 
   should_sell = abs((strike - exp_strike)/exp_strike) < .02 and delta > REFERENCE_CONFIDENCE
-  printout(f' Sell cc? {should_sell_cc}')
+  printout(f' Sell cc? {should_sell}')
   return should_sell
 
 
@@ -169,6 +170,7 @@ def should_sell_csep(contract, exp_strike):
   delta = contract['greeks']['delta']
 
   should_sell = abs((strike - exp_strike)/exp_strike) < .02 and delta > REFERENCE_CONFIDENCE
+  printout(f' Sell csep? {should_sell}')
   return should_sell
 
 
@@ -193,13 +195,13 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   cc_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, +1)
   this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=3)
 
-  for contract in this_chain:
+  for _contract in this_chain:
+    contract = _contract.copy()
+    contract['annual_roi'] = calc_annual_roi(contract)
     pprint_contract(contract)
     should_sell = should_sell_cc(contract, cc_exp_strike)
     if should_sell:
-      _contract = contract.copy()
-      _contract['annual_roi'] = calc_annual_roi(contract)
-      worthy_contracts.append(_contract)
+      worthy_contracts.append(contract)
 
   printout('\n' + '*' * 10 + '\n')
 
@@ -209,13 +211,14 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   csep_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, -1)
   this_chain = fetch_options_chain(symbol, best_expiry, 'put', csep_exp_strike, plus_minus=3)
 
-  for contract in this_chain:
+  for _contract in this_chain:
+    contract = _contract.copy()
+    contract['annual_roi'] = calc_annual_roi(contract)
     pprint_contract(contract)
     should_sell = should_sell_csep(contract, csep_exp_strike)
     if should_sell:
-      _contract = contract.copy()
-      _contract['annual_roi'] = calc_annual_roi(contract)
-      worthy_contracts.append(_contract)
+      
+      worthy_contracts.append(contract)
 
   return worthy_contracts
 

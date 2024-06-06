@@ -28,8 +28,6 @@ def select_max_iv_contract(chain):
   if not chain:
     raise ValueError('No options found')
 
-#  print(chain)
-
   max_seen = 0
   max_index = -1
   for i, option in enumerate(chain):

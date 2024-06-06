@@ -67,6 +67,7 @@ def fetch_next_earnings_date(symbol):
   for event in events:
     if event['event_type'] != 14:
       continue
+    
     if event['begin_date_time'][:4] == str(datetime.now().year):
        relevant_events.append(event)
 

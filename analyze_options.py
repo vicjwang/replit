@@ -1,10 +1,18 @@
 import statistics
 import math
 import matplotlib.pyplot as plt
+
 import pandas as pd
+
+import backtest
+
 from datetime import datetime, date, timedelta
 
-from utils import fetch_past_earnings_dates, printout
+from utils import (
+  fetch_past_earnings_dates, printout,
+  count_trading_days,
+  calc_expected_strike,
+)
 
 from tradier import (
   make_api_request,
@@ -15,14 +23,14 @@ from tradier import (
   fetch_next_earnings_date,
 )
 
-from constants import SHOULD_AVOID_EARNINGS
-
-
-START_DATE = '2020-04-01'
-REFERENCE_CONFIDENCE = 0.158
-NOTABLE_DELTA_MAX = .2
-WORTHY_ROI = 0.15
-
+from constants import (
+  SHOULD_AVOID_EARNINGS,
+  REFERENCE_CONFIDENCE,
+  START_DATE,
+  NOTABLE_DELTA_MAX,
+  WORTHY_ROI,
+)
+  
 
 def select_max_iv_contract(chain):
   if not chain:
@@ -81,13 +89,7 @@ def calc_historical_price_movement_stats(prices, period=1, ax=None):
   return statistics.mean(price_moves), statistics.stdev(price_moves), high_52, low_52, len(price_moves)
 
 
-def calc_expected_strike(current_price, mu, sigma, n, zscore):
-  exp_strike = current_price * (1 + n*mu + zscore*sigma/math.sqrt(n))
 
-  printout(f'My expected *{zscore}* sigma move price: {round(exp_strike, 2)} (aka {REFERENCE_CONFIDENCE} confidence)')
-  printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={n}\n')
-
-  return exp_strike
 
 
 def fetch_filtered_options_expirations(symbol, expiry_days=None):
@@ -109,21 +111,6 @@ def fetch_filtered_options_expirations(symbol, expiry_days=None):
 
   printout(f'Next earnings date: {next_earnings_date}\n')
   return expirations
-
-
-def count_trading_days(start_date, end_date):
-  # Ensure the dates are in the correct format
-  start_date = pd.to_datetime(start_date)
-  end_date = pd.to_datetime(end_date)
-
-  # Create a date range between the start and end dates
-  date_range = pd.date_range(start=start_date, end=end_date)
-
-  # Filter out only the weekdays (Monday to Friday)
-  weekdays = date_range[date_range.weekday < 5]
-
-  # Return the count of weekdays
-  return len(weekdays)
 
 
 def fetch_optimal_expiry(symbol, last_close, expiry_days=None):
@@ -212,8 +199,9 @@ def should_sell_csep(contract, exp_strike):
 def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None):
   historical_prices = fetch_historical_prices(symbol, start_date)
   last_close = historical_prices[-1]['close']
-  printout(f'Latest price: {last_close}')
-
+  last_move = (historical_prices[-1]['close'] - historical_prices[-2]['close'])/historical_prices[-2]['close']
+  printout(f'Latest price: {last_close}, {"+" if last_move > 0 else ""}{round(last_move * 100, 2)}%')
+  
   prices = filter_historical_prices(symbol, historical_prices)
 
   best_expiry, days_to_best_expiry = fetch_optimal_expiry(symbol, last_close)
@@ -228,13 +216,20 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
 
   # Pull closest strike to S (= expected avg+1 sigma) and delta D of chain.
   cc_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, +1)
+
+  historical_proba = backtest.calc_historical_proba(symbol, prices, mu, sigma, days_to_best_expiry)
+
+  printout(f'My expected *1* sigma move price: {round(cc_exp_strike, 2)} (aka {REFERENCE_CONFIDENCE*100}% confidence)')
+  printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
+  printout(f'Historical delta for 1 sigma move in {days_to_best_expiry} days = {round(1-historical_proba, 2)}\n')
+
   this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=last_close*3*sigma)
 
   for _contract in this_chain:
     contract = _contract.copy()
     contract['annual_roi'] = calc_annual_roi(contract)
     pprint_contract(contract)
-    should_sell = should_sell_cc(contract, cc_exp_strike)
+    should_sell = last_move > .3*sigma and should_sell_cc(contract, cc_exp_strike)
     if should_sell:
       worthy_contracts.append(contract)
 
@@ -258,6 +253,8 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
 
   
   """
+
+  
 
   return worthy_contracts
 

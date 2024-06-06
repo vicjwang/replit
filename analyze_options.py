@@ -219,16 +219,22 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
 
   historical_proba = backtest.calc_historical_proba(symbol, prices, mu, sigma, days_to_best_expiry)
 
-  printout(f'My expected *1* sigma move price: {round(cc_exp_strike, 2)} (aka {REFERENCE_CONFIDENCE*100}% confidence)')
+  printout(f'\033[32mMy expected *1* sigma move price: {round(cc_exp_strike, 2)} (aka {REFERENCE_CONFIDENCE*100}% confidence)\033[0m')
   printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
   printout(f'Historical delta for 1 sigma move in {days_to_best_expiry} days = {round(1-historical_proba, 2)}\n')
 
   this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=last_close*3*sigma)
 
-  for _contract in this_chain:
+  for i, _contract in enumerate(this_chain):
     contract = _contract.copy()
     contract['annual_roi'] = calc_annual_roi(contract)
-    pprint_contract(contract)
+    if i == len(this_chain)//2:
+      print(f'\033[32m', end='')
+      pprint_contract(contract)
+      print('\033[0m', end='')
+    else:
+      pprint_contract(contract)
+      
     should_sell = last_move > .3*sigma and should_sell_cc(contract, cc_exp_strike)
     if should_sell:
       worthy_contracts.append(contract)

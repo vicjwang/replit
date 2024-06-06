@@ -21,7 +21,7 @@ from constants import SHOULD_AVOID_EARNINGS
 START_DATE = '2020-04-01'
 REFERENCE_CONFIDENCE = 0.158
 NOTABLE_DELTA_MAX = .2
-WORTHY_ROI = 15
+WORTHY_ROI = 0.15
 
 
 def select_max_iv_contract(chain):
@@ -41,8 +41,22 @@ def select_max_iv_contract(chain):
   return chain[max_index]
 
 
+def filter_historical_prices(symbol, prices):  
+  earnings_dates = set(fetch_past_earnings_dates(symbol))
+  if not earnings_dates or not SHOULD_AVOID_EARNINGS:
+    return prices
+
+  filtered_prices = []
+  for i in range(len(prices)):
+    if prices[i]['date'] in earnings_dates or prices[i - 1]['date'] in earnings_dates:
+      continue
+
+    filtered_prices.append(prices[i])
+
+  return filtered_prices
+
+
 def calc_historical_price_movement_stats(prices, period=1, ax=None):
-  earnings_dates = set(fetch_past_earnings_dates())
 
   price_moves = []
 
@@ -57,9 +71,7 @@ def calc_historical_price_movement_stats(prices, period=1, ax=None):
       high_52 = prices[i]['close']
     if prices[i]['close'] < low_52 and prices[i]['date'] > year_ago:
       low_52 = prices[i]['close']
-
-
-    # save price diff from i to i + period
+    
     price_move = (prices[i + period]['close'] - prices[i]['close'])/prices[i]['close']
     price_moves.append(price_move)
 
@@ -179,7 +191,6 @@ def should_sell_cc(contract, exp_strike):
   roi = contract['annual_roi']
 
   is_market_overest = (strike - exp_strike)/exp_strike > -0.02 and delta > REFERENCE_CONFIDENCE
-
   is_delta_notable = REFERENCE_CONFIDENCE <= delta <= NOTABLE_DELTA_MAX
   is_roi_worthy = roi > WORTHY_ROI
 
@@ -205,7 +216,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   last_close = historical_prices[-1]['close']
   printout(f'Latest price: {last_close}')
 
-  prices = historical_prices
+  prices = filter_historical_prices(symbol, historical_prices)
 
   best_expiry, days_to_best_expiry = fetch_optimal_expiry(symbol, last_close)
 

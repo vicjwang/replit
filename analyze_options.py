@@ -1,6 +1,7 @@
 import statistics
 import math
 import matplotlib.pyplot as plt
+import pandas as pd
 from datetime import datetime, date, timedelta
 
 from utils import fetch_past_earnings_dates, printout
@@ -19,6 +20,8 @@ from constants import SHOULD_AVOID_EARNINGS
 
 START_DATE = '2020-04-01'
 REFERENCE_CONFIDENCE = 0.158
+NOTABLE_DELTA_MAX = .2
+WORTHY_ROI = 15
 
 
 def select_max_iv_contract(chain):
@@ -68,11 +71,11 @@ def calc_historical_price_movement_stats(prices, period=1, ax=None):
   return statistics.mean(price_moves), statistics.stdev(price_moves), high_52, low_52, len(price_moves)
 
 
-def calc_expected_strike(current_price, mu, sigma, sample_size, zscore):
-  exp_strike = current_price * (1 + sample_size*mu + zscore*sigma/math.sqrt(sample_size))
+def calc_expected_strike(current_price, mu, sigma, n, zscore):
+  exp_strike = current_price * (1 + n*mu + zscore*sigma/math.sqrt(n))
 
   printout(f'My expected *{zscore}* sigma move price: {round(exp_strike, 2)} (aka {REFERENCE_CONFIDENCE} confidence)')
-  printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, sample_size={sample_size}')
+  printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={n}\n')
 
   return exp_strike
 
@@ -80,7 +83,7 @@ def calc_expected_strike(current_price, mu, sigma, sample_size, zscore):
 def fetch_filtered_options_expirations(symbol, expiry_days=None):
 
   # Get all expirations up to 7 weeks.
-  expirations = fetch_options_expirations(symbol)[1:7]
+  expirations = fetch_options_expirations(symbol)[4:7]
 
   expiry_date = (datetime.now() + timedelta(days=expiry_days)).strftime('%Y-%m-%d') if expiry_days else None
   default_date = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
@@ -98,6 +101,21 @@ def fetch_filtered_options_expirations(symbol, expiry_days=None):
   return expirations
 
 
+def count_trading_days(start_date, end_date):
+  # Ensure the dates are in the correct format
+  start_date = pd.to_datetime(start_date)
+  end_date = pd.to_datetime(end_date)
+
+  # Create a date range between the start and end dates
+  date_range = pd.date_range(start=start_date, end=end_date)
+
+  # Filter out only the weekdays (Monday to Friday)
+  weekdays = date_range[date_range.weekday < 5]
+
+  # Return the count of weekdays
+  return len(weekdays)
+
+
 def fetch_optimal_expiry(symbol, last_close, expiry_days=None):
   expirations = fetch_filtered_options_expirations(symbol)
 
@@ -113,8 +131,9 @@ def fetch_optimal_expiry(symbol, last_close, expiry_days=None):
   max_iv_contract = select_max_iv_contract(combined_chain)
   max_iv_expiry = max_iv_contract['expiration_date']
 
-  days_to_expiry = expiry_days or (datetime.strptime(max_iv_expiry, '%Y-%m-%d').date() - date.today()).days # don't add one to not count date of sale
-  printout(f'Days to max IV contract expiry: {days_to_expiry}\n')
+  days_to_expiry = expiry_days or count_trading_days(str(datetime.today().date()), max_iv_expiry)
+  
+  printout(f'{days_to_expiry} trading days to max IV contract expiry {max_iv_expiry}\n')
 
   return max_iv_expiry, days_to_expiry
 
@@ -126,9 +145,7 @@ def calc_annual_roi(contract):
   days_to_expiry = (datetime.strptime(expiry_date, '%Y-%m-%d').date() - date.today()).days
 
   roi = bid / strike
-  printout(f' ROI: {round(roi, 2)}')
   annualized_roi = roi * 365 / days_to_expiry
-  printout(f' Annualized ROI: {round(annualized_roi, 2)}')
   return annualized_roi
 
 
@@ -159,8 +176,17 @@ def should_sell_cc(contract, exp_strike):
   #      Ex. market: current price is $85. At marketDelta = 15.8%, strike is $110. But avg+1 sigma = $90 so I think $110 is basically zero so sell CC at $110.
   strike = contract['strike']
   delta = contract['greeks']['delta']
+  roi = contract['annual_roi']
 
-  should_sell = abs((strike - exp_strike)/exp_strike) < .02 and delta > REFERENCE_CONFIDENCE
+  is_market_overest = (strike - exp_strike)/exp_strike > -0.02 and delta > REFERENCE_CONFIDENCE
+
+  is_delta_notable = REFERENCE_CONFIDENCE <= delta <= NOTABLE_DELTA_MAX
+  is_roi_worthy = roi > WORTHY_ROI
+
+  should_sell = is_roi_worthy and any([
+    is_market_overest,
+    is_delta_notable,
+  ])
   printout(f' Sell cc? {should_sell}')
   return should_sell
 
@@ -169,7 +195,7 @@ def should_sell_csep(contract, exp_strike):
   strike = contract['strike']
   delta = contract['greeks']['delta']
 
-  should_sell = abs((strike - exp_strike)/exp_strike) < .02 and delta > REFERENCE_CONFIDENCE
+  should_sell = (strike - exp_strike)/exp_strike > -0.02 and delta > REFERENCE_CONFIDENCE
   printout(f' Sell csep? {should_sell}')
   return should_sell
 
@@ -193,7 +219,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
 
   # Pull closest strike to S (= expected avg+1 sigma) and delta D of chain.
   cc_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, +1)
-  this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=3)
+  this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=last_close*3*sigma)
 
   for _contract in this_chain:
     contract = _contract.copy()
@@ -205,11 +231,12 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
 
   printout('\n' + '*' * 10 + '\n')
 
+  """
   # Do same thing for CSEP.
   printout(f'52 week low: {low_52}')
 
   csep_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, -1)
-  this_chain = fetch_options_chain(symbol, best_expiry, 'put', csep_exp_strike, plus_minus=3)
+  this_chain = fetch_options_chain(symbol, best_expiry, 'put', csep_exp_strike, plus_minus=last_close*3*sigma)
 
   for _contract in this_chain:
     contract = _contract.copy()
@@ -217,8 +244,11 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
     pprint_contract(contract)
     should_sell = should_sell_csep(contract, csep_exp_strike)
     if should_sell:
-      
+
       worthy_contracts.append(contract)
+
+  
+  """
 
   return worthy_contracts
 

@@ -217,11 +217,11 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   # Pull closest strike to S (= expected avg+1 sigma) and delta D of chain.
   cc_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, +1)
 
-  historical_proba = backtest.calc_historical_proba(symbol, prices, mu, sigma, days_to_best_expiry)
+  historical_itm_proba = backtest.calc_historical_itm_proba(symbol, prices, mu, sigma, days_to_best_expiry)
 
   printout(f'\033[32mMy expected *1* sigma move price: {round(cc_exp_strike, 2)} (aka {REFERENCE_CONFIDENCE*100}% confidence)\033[0m')
   printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
-  printout(f'Historical delta for 1 sigma move in {days_to_best_expiry} days = {round(1-historical_proba, 2)}\n')
+  printout(f'Historical delta for 1 sigma move in {days_to_best_expiry} days = {round(historical_itm_proba, 2)} (want this to be smaller than actual delta of target contract)\n')
 
   this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=last_close*3*sigma)
 

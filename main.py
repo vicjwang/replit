@@ -50,9 +50,6 @@ START_DATE = '2023-01-01'  # rate cut?
 #START_DATE = '2020-04-01' # COVID
 EXPIRY_DAYS = None
 
-# Get the list of tickers
-
-
 Ticker = namedtuple('Ticker', ['symbol', 'name', 'next_earnings'], defaults=(None, None, None))
 
 TICKERS = [

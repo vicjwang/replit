@@ -35,7 +35,7 @@ from constants import (
   NOTABLE_DELTA_MAX,
   WORTHY_ROI,
 )
-  
+
 
 def select_max_iv_contract(chain):
   if not chain:
@@ -52,7 +52,7 @@ def select_max_iv_contract(chain):
   return chain[max_index]
 
 
-def filter_historical_prices(symbol, prices):  
+def filter_historical_prices(symbol, prices):
   earnings_dates = set(fetch_past_earnings_dates(symbol))
   if not earnings_dates or not SHOULD_AVOID_EARNINGS:
     return prices
@@ -80,23 +80,23 @@ def calc_historical_price_movement_stats(prices, period=1, ax=None):
 
     price_move = (prices[i + period]['close'] - prices[i]['close'])/prices[i]['close']
     price_moves.append(price_move)
-    
+
     # Store high and lows for past year.
     if prices[i]['close'] > high_52 and prices[i]['date'] > year_ago:
       high_52 = prices[i]['close']
-      
+
     if prices[i]['close'] < low_52 and prices[i]['date'] > year_ago:
       low_52 = prices[i]['close']
 
   mean = statistics.mean(price_moves)
   stdev = statistics.stdev(price_moves)
   size = len(price_moves)
-  
+
   if ax:
     min_bin = min(price_moves)
     max_bin = max(price_moves)
     x = np.arange(min_bin, max_bin, 0.001)
-    
+
     ax.hist(price_moves, bins=x)
     ax.legend(title=f'Period={period}')
 
@@ -145,7 +145,7 @@ def fetch_optimal_option_expiry(symbol, last_close, expiry_days=None):
   max_iv_expiry = max_iv_contract['expiration_date']
 
   days_to_expiry = expiry_days or count_trading_days(str(datetime.today().date()), max_iv_expiry)
-  
+
   printout(f'{days_to_expiry} trading days to max IV contract expiry {max_iv_expiry}\n')
 
   return max_iv_expiry, days_to_expiry
@@ -216,8 +216,8 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   historical_prices = fetch_historical_prices(symbol, start_date)
   last_close = historical_prices[-1]['close']
   last_move = (historical_prices[-1]['close'] - historical_prices[-2]['close'])/historical_prices[-2]['close']
-  printout(f'Latest price: {last_close}, {"+" if last_move > 0 else ""}{round(last_move * 100, 2)}%')
-  
+  printout(f'\033[01mLatest price: {last_close}, {"+" if last_move > 0 else ""}{round(last_move * 100, 2)}%\033[0m')
+
   prices = filter_historical_prices(symbol, historical_prices)
 
   best_expiry, days_to_best_expiry = fetch_optimal_option_expiry(symbol, last_close)
@@ -235,9 +235,9 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
 
   historical_itm_proba = backtest.calc_historical_itm_proba(symbol, prices, mu, sigma, days_to_best_expiry)
 
-  printout(f'My expected *1* sigma move price: \033[32m{round(cc_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
+  printout(f'My expected *+1* sigma move price: \033[32m{round(cc_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
   printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
-  printout(f'Historical delta for 1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
+  printout(f'Historical delta for +1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
 
   this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=last_close*3*sigma)
 
@@ -250,18 +250,23 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
       print('\033[0m', end='')
     else:
       pprint_contract(contract)
-      
+
     should_sell = last_move > .3*sigma and should_sell_cc(contract, cc_exp_strike)
     if should_sell:
       worthy_contracts.append(contract)
 
   printout('\n' + '*' * 10 + '\n')
 
-  """
   # Do same thing for CSEP.
   printout(f'52 week low: {low_52}')
 
   csep_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, -1)
+
+
+  printout(f'My expected *-1* sigma move price: \033[32m{round(csep_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
+  printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
+#  printout(f'Historical delta for -1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
+
   this_chain = fetch_options_chain(symbol, best_expiry, 'put', csep_exp_strike, plus_minus=last_close*3*sigma)
 
   for _contract in this_chain:
@@ -270,13 +275,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
     pprint_contract(contract)
     should_sell = should_sell_csep(contract, csep_exp_strike)
     if should_sell:
-
       worthy_contracts.append(contract)
-
-  
-  """
-
-  
 
   return worthy_contracts
 

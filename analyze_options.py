@@ -11,6 +11,8 @@ import backtest
 
 from datetime import datetime, date, timedelta
 
+from scipy.stats import norm
+
 from utils import (
   fetch_past_earnings_dates, printout,
   count_trading_days,
@@ -86,17 +88,24 @@ def calc_historical_price_movement_stats(prices, period=1, ax=None):
     if prices[i]['close'] < low_52 and prices[i]['date'] > year_ago:
       low_52 = prices[i]['close']
 
+  mean = statistics.mean(price_moves)
+  stdev = statistics.stdev(price_moves)
+  size = len(price_moves)
+  
   if ax:
     min_bin = min(price_moves)
     max_bin = max(price_moves)
-    ax.hist(price_moves, bins=np.arange(min_bin, max_bin, 0.001))
+    x = np.arange(min_bin, max_bin, 0.001)
+    
+    ax.hist(price_moves, bins=x)
     ax.legend(title=f'Period={period}')
 
+    # Graph normalized Gaussian.
+    y = norm.pdf(x, mean, stdev)
+    ax.plot(x, y, label='Normalized Gaussian')
+
   # return avg, stdev
-  return statistics.mean(price_moves), statistics.stdev(price_moves), high_52, low_52, len(price_moves)
-
-
-
+  return mean, stdev, high_52, low_52, size
 
 
 def fetch_filtered_options_expirations(symbol, expiry_days=None):
@@ -120,7 +129,7 @@ def fetch_filtered_options_expirations(symbol, expiry_days=None):
   return expirations
 
 
-def fetch_optimal_expiry(symbol, last_close, expiry_days=None):
+def fetch_optimal_option_expiry(symbol, last_close, expiry_days=None):
   expirations = fetch_filtered_options_expirations(symbol)
 
   # Find highest IV contract expiry.
@@ -211,7 +220,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   
   prices = filter_historical_prices(symbol, historical_prices)
 
-  best_expiry, days_to_best_expiry = fetch_optimal_expiry(symbol, last_close)
+  best_expiry, days_to_best_expiry = fetch_optimal_option_expiry(symbol, last_close)
 
   worthy_contracts = []
 

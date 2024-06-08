@@ -1,6 +1,9 @@
 import statistics
 import math
+import sys
 import matplotlib.pyplot as plt
+
+import numpy as np
 
 import pandas as pd
 
@@ -69,20 +72,24 @@ def calc_historical_price_movement_stats(prices, period=1, ax=None):
   high_52 = 0
   low_52 = 1_000_000_000
   year_ago = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
+
   # iterate from 0 to len - period
   for i in range(0, len(prices) - period):
 
+    price_move = (prices[i + period]['close'] - prices[i]['close'])/prices[i]['close']
+    price_moves.append(price_move)
+    
     # Store high and lows for past year.
     if prices[i]['close'] > high_52 and prices[i]['date'] > year_ago:
       high_52 = prices[i]['close']
+      
     if prices[i]['close'] < low_52 and prices[i]['date'] > year_ago:
       low_52 = prices[i]['close']
-    
-    price_move = (prices[i + period]['close'] - prices[i]['close'])/prices[i]['close']
-    price_moves.append(price_move)
 
   if ax:
-    ax.hist(price_moves)
+    min_bin = min(price_moves)
+    max_bin = max(price_moves)
+    ax.hist(price_moves, bins=np.arange(min_bin, max_bin, 0.001))
     ax.legend(title=f'Period={period}')
 
   # return avg, stdev

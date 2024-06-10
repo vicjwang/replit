@@ -257,7 +257,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
 
   printout('\n' + '*' * 10 + '\n')
 
-  """
+  
   # Do same thing for CSEP.
   printout(f'52 week low: {low_52}')
 
@@ -274,7 +274,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
       worthy_contracts.append(contract)
 
   
-  """
+  
 
   
 

@@ -12,35 +12,36 @@ from collections import namedtuple, defaultdict
 from constants import SHOULD_AVOID_EARNINGS
 
 from utils import printout
+from backtest import run_mc_sim
 
-SHOW_GRAPH = True
-RENDER_FIG = True
+SHOW_GRAPH = False
+RENDER_FIG = False
 
 SHOW_TICKERS = defaultdict(
   bool,
   dict(
-    #AAPL=1,
-  #  ABNB=1,
-  #  AMZN=1,
- #   CRM=1,
-  #  CRWD=1,
+    AAPL=1,
+    ABNB=1,
+    AMZN=1,
+    CRM=1,
+    CRWD=1,
     DDOG=1,  # cc
     DIS=1,  # cc
-  #  GOOG=1,
+    GOOG=1,
     OKTA=1,  # cc
-  #  META=1,
+    META=1,
     MDB=1,  # cc
     #GME=1,
 #    MSFT=1,
     #MSTR=1,
-    #NVDA=1,
-  #  SHOP=1,
+    NVDA=1,
+    SHOP=1,
     SNAP=1,  # cc
- #   SQ=1,
- #   TSLA=1,
+    SQ=1,
+    TSLA=1,
     TWLO=1,  # cc
-#    TSM=1,
- #   TXN=1,
+    TSM=1,
+    TXN=1,
   )
 )
 
@@ -172,7 +173,8 @@ def main():
     printout('#' * 70)
     print(ticker)
     ax = fig.add_subplot(len(tickers), 2, i + 1) if fig else None
-    ax.set_title(ticker.name)
+    if ax:
+      ax.set_title(ticker.name)
 
     next_earnings_date = None
     try:
@@ -219,9 +221,8 @@ def main():
 
 
 if __name__ == '__main__':
-  main()
-
-
+  #main()
+  run_mc_sim('BTC-USD', 30*15, ax=None)
 
 
 

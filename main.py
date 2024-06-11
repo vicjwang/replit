@@ -9,13 +9,15 @@ from datetime import datetime
 from analyze_options import determine_overpriced_option_contracts
 from collections import namedtuple, defaultdict
 #from analyze_fundamentals import graph_historical_valuations
-from constants import SHOULD_AVOID_EARNINGS
+from constants import (
+  SHOULD_AVOID_EARNINGS,
+  SHOW_GRAPH,
+  RENDER_FIG,
+)
 
 from utils import printout
 from backtest import run_mc_sim
 
-SHOW_GRAPH = False
-RENDER_FIG = False
 
 SHOW_TICKERS = defaultdict(
   bool,
@@ -222,8 +224,20 @@ def main():
 
 if __name__ == '__main__':
   #main()
-  run_mc_sim('BTC-USD', 30*15, ax=None)
 
-
-
+  for plan in [
+    'daily',
+    'weekly',
+    #'daily_50ma',
+    #'daily_100ma',
+    #'weekly_50ma',
+    #'weekly_75ma',
+    #'weekly_100ma',
+    #'monthly_100ma',
+    'daily_200ma',
+    'weekly_200ma',
+  ]:
+    LAST_SALE_DATE = '2025-10-01'
+    num_days = (datetime.strptime(LAST_SALE_DATE, '%Y-%m-%d').date()  - datetime.today().date()).days
+    run_mc_sim('BTC-USD', num_days, plan, ax=None)
 

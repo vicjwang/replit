@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,6 +10,7 @@ from constants import SHOW_GRAPH
 from utils import fetch_past_earnings_dates, calc_expected_strike
 
 
+TODAY_DATE = datetime.today().date()
 START_DATE = '2010-01-01'
 SALE_START_DATE = '2025-04-01'
 SALE_PLAN = 'weekly'
@@ -42,7 +44,7 @@ def execute_sale_plan(prices, plan_name='weekly'):
     'max_price': 0,
   }
 
-  sale_start_index = (datetime.strptime(SALE_START_DATE, '%Y-%m-%d').date() - datetime.today().date()).days
+  sale_start_index = (datetime.strptime(SALE_START_DATE, '%Y-%m-%d').date() - TODAY_DATE).days
 
   if 'daily' in plan_name:
     # Sell equal amount every day
@@ -84,26 +86,27 @@ def execute_sale_plan(prices, plan_name='weekly'):
 
 
 def run_mc_sim(symbol, num_days, plan=SALE_PLAN, ax=None):
-  today = str(datetime.today().date())
-
   # Step 0: Download historical data
-  prices = yf.download(symbol, start=START_DATE, end=today)
+  prices = yf.download(symbol, start=START_DATE, end=TODAY_DATE)
 
   # Step 1a: Add useful columns.
   #k = parse_k_from_plan_name(plan_name)
   #prices['ma'] = prices['Adj Close'].rolling(window=k).mean()
 
   # Step 1b: Only use historical bull run dates.
-  halvings = ('2012-11-28', '2016-07-09', '2020-05-11', '2024-04-19')
-  halving_dates = [datetime.strptime(date, '%Y-%m-%d').date() for date in halvings]
+  # yfinance data starts from 2014-09-17.
+  # first halvening date = '2012-11-28'
+  halvings = ('2016-07-09', '2020-05-11', '2024-04-19')
+#  halving_dates = [datetime.strptime(date, '%Y-%m-%d').date() for date in halvings]
+  halving_dates = [pd.Timestamp(date) for date in halvings]
 
   bull_df = pd.DataFrame()
   for halving_date in halving_dates:
-    bull_df = pd.concat([bull_df, prices.loc[halving_date: halving_date + timedelta(days=30*18)]])
+    bull_cycle = prices.loc[halving_date: halving_date + timedelta(days=30*18)]
+    bull_df = pd.concat([bull_df, bull_cycle])
 
   # Step 2: Calculate daily returns
   bull_df['Returns'] = bull_df['Adj Close'].pct_change()
-
 
   # Step 3: Set up the simulation parameters
   num_simulations = 1000
@@ -190,3 +193,28 @@ def calc_historical_itm_proba(symbol, prices, mu, sigma, trading_days, contract_
   proba = len(df[df['is_itm'] == True])/len(df['expected_price'].dropna())
 
   return proba
+
+
+def main():
+  # Get historical prices.
+  prices = yf.download('BTC-USD', start=START_DATE, end=TODAY_DATE)
+  sale_period = 30*6
+
+  # Loop through date ranges.
+  halvings = ('2016-07-09', '2020-05-11', '2024-04-19')
+  halving_dates = [pd.Timestamp(date) for date in halvings]
+  for halving_date in halving_dates:
+    print('FOR HALVING:', halving_date)
+    for month in range(12, 24):
+      start_date = halving_date + timedelta(days=month*30)
+      end_date = start_date + timedelta(days=sale_period)
+
+      prices_df = prices.loc[start_date:end_date]
+      sale = np.sum(prices_df['Adj Close'] * MAX_QTY/sale_period)
+
+      print(f'{start_date} to {end_date}: ${round(sale):,}')
+    print()
+
+main()
+
+

@@ -156,9 +156,6 @@ def graph_historical(x, y, mean, title, ax):
   ax.plot(x, [mean] * len(x), color='r', linestyle='--')
 
 
-
-
-
 def main():
 
   tickers = sorted([ticker for ticker in TICKERS if SHOW_TICKERS[ticker.symbol] == 1], key=lambda t: t.symbol)

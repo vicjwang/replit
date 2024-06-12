@@ -31,7 +31,7 @@ def printout(s=''):
 
 
 def calc_expected_strike(current_price, mu, sigma, n, zscore):
-  exp_strike = current_price * (1 + n*mu + zscore*sigma/math.sqrt(n))
+  exp_strike = current_price * (1 + n*mu + zscore*n*sigma)
   return exp_strike
 
 

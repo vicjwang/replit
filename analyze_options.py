@@ -229,17 +229,18 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   worthy_contracts = []
 
   # Calculate average price change and sigma of 1 day.
-  mu, sigma, high_52, low_52, size = calc_historical_price_movement_stats(prices, ax=ax)
+  mu, sigma, high_52, low_52, size = calc_historical_price_movement_stats(prices, period=1, ax=ax)
 
   # Find covered calls to sell.
   printout(f'52 week high: {high_52}')
 
   # Pull closest strike to S (= expected avg+1 sigma) and delta D of chain.
-  cc_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, +1)
+  zscore = 0
+  cc_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, zscore)
 
   historical_itm_proba = backtest.calc_historical_itm_proba(symbol, prices, mu, sigma, days_to_best_expiry)
 
-  printout(f'My expected *+1* sigma move price: \033[32m{round(cc_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
+  printout(f'My expected *{zscore}* sigma move price: \033[32m{round(cc_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
   printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
   printout(f'Historical delta for +1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
 
@@ -264,10 +265,10 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   # Do same thing for CSEP.
   printout(f'52 week low: {low_52}')
 
-  csep_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, -1)
+  csep_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, zscore)
 
 
-  printout(f'My expected *-1* sigma move price: \033[32m{round(csep_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
+  printout(f'My expected *{zscore}* sigma move price: \033[32m{round(csep_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
   printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
 #  printout(f'Historical delta for -1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
 

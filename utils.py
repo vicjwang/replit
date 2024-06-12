@@ -4,6 +4,25 @@ import pandas as pd
 from constants import IS_VERBOSE, REFERENCE_CONFIDENCE
 
 
+def get_option_contract_str(contract):
+  desc = contract['description']
+  last = contract['last']
+  annual_roi = round(contract['annual_roi']*100, 2)
+  theta = round(contract['greeks']['theta'], 4)
+  delta = round(contract['greeks']['delta'], 4)
+  gamma = round(contract['greeks']['gamma'], 4)
+  vega = round(contract['greeks']['vega'], 4)
+  iv = round(contract['greeks']['smv_vol'], 4)
+  return f"""{desc}:
+    last={last}
+    annual_roi={annual_roi}%
+    iv={iv}
+    delta={delta}
+    theta={theta}
+    gamma={gamma}
+    vega={vega}"""
+
+
 def printout(s=''):
   if not IS_VERBOSE:
     return
@@ -14,7 +33,7 @@ def printout(s=''):
 def calc_expected_strike(current_price, mu, sigma, n, zscore):
   exp_strike = current_price * (1 + n*mu + zscore*sigma/math.sqrt(n))
   return exp_strike
-  
+
 
 def fetch_past_earnings_dates(symbol):
   filepath = f'earnings_dates/{symbol.lower()}.csv'

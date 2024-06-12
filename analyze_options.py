@@ -37,17 +37,17 @@ from constants import (
 )
 
 
-def select_max_iv_contract(chain):
+def select_max_greek_contract(chain, greek_key='delta'):
   if not chain:
     raise ValueError('No options found')
 
   max_seen = 0
   max_index = -1
   for i, option in enumerate(chain):
-    bid_iv = option['greeks']['bid_iv']
+    greek = option['greeks'][greek_key]
 
-    if bid_iv > max_seen:
-      max_seen = bid_iv
+    if greek > max_seen:
+      max_seen = greek
       max_index = i
   return chain[max_index]
 
@@ -141,12 +141,16 @@ def fetch_optimal_option_expiry(symbol, last_close, expiry_days=None):
     printout('No suitable options found.')
     return []
 
-  max_iv_contract = select_max_iv_contract(combined_chain)
+  max_iv_contract = select_max_greek_contract(combined_chain, 'smv_vol')
   max_iv_expiry = max_iv_contract['expiration_date']
+
+  max_theta_contract = select_max_greek_contract(combined_chain, 'theta')
+  max_theta_expiry = max_theta_contract['expiration_date']
 
   days_to_expiry = expiry_days or count_trading_days(str(datetime.today().date()), max_iv_expiry)
 
   printout(f'{days_to_expiry} trading days to max IV contract expiry {max_iv_expiry}\n')
+  printout(f'max theta expiry: {max_theta_expiry}\n')
 
   return max_iv_expiry, days_to_expiry
 

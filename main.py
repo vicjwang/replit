@@ -11,10 +11,11 @@ from collections import namedtuple, defaultdict
 #from analyze_fundamentals import graph_historical_valuations
 from constants import SHOULD_AVOID_EARNINGS
 
-from utils import printout
+from utils import printout, get_option_contract_str
 
-SHOW_GRAPH = True
-RENDER_FIG = True
+
+SHOW_GRAPH = False
+RENDER_FIG = False
 
 SHOW_TICKERS = defaultdict(
   bool,
@@ -25,11 +26,11 @@ SHOW_TICKERS = defaultdict(
  #   CRM=1,
   #  CRWD=1,
     DDOG=1,  # cc
-    DIS=1,  # cc
+#    DIS=1,  # cc
   #  GOOG=1,
-    OKTA=1,  # cc
+#    OKTA=1,  # cc
   #  META=1,
-    MDB=1,  # cc
+#    MDB=1,  # cc
     #GME=1,
 #    MSFT=1,
     #MSTR=1,
@@ -168,8 +169,10 @@ def main():
   for i, ticker in enumerate(tickers):
     printout('#' * 70)
     print(ticker)
+
     ax = fig.add_subplot(len(tickers), 2, i + 1) if fig else None
-    ax.set_title(ticker.name)
+    if ax:
+      ax.set_title(ticker.name)
 
     next_earnings_date = None
     try:
@@ -202,11 +205,8 @@ def main():
   print(f'Found {len(contracts)} potentially overpriced option contracts:')
   for contract in sorted(contracts, key=lambda c: -c['annual_roi']):
     ticker = contract['root_symbol']
-    desc = contract['description']
-    last = contract['last']
-    annual_roi = contract['annual_roi']
-    delta = contract['greeks']['delta']
-    print(f' {desc} last={last} annual_roi={round(annual_roi*100, 2)}% delta={round(delta, 4)}')
+    option_str = get_option_contract_str(contract)
+    print(' ', option_str)
 
 
   if SHOW_GRAPH:
@@ -217,9 +217,3 @@ def main():
 
 if __name__ == '__main__':
   main()
-
-
-
-
-
-

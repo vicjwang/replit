@@ -205,14 +205,15 @@ def main():
   halving_dates = [pd.Timestamp(date) for date in halvings]
   for halving_date in halving_dates:
     print('FOR HALVING:', halving_date)
-    for month in range(12, 24):
-      start_date = halving_date + timedelta(days=month*30)
-      end_date = start_date + timedelta(days=sale_period)
+    for month in range(14, 18):
+      for days in range(30, sale_period, 30):
+        start_date = halving_date + timedelta(days=month*30)
+        end_date = start_date + timedelta(days=days)
 
-      prices_df = prices.loc[start_date:end_date]
-      sale = np.sum(prices_df['Adj Close'] * MAX_QTY/sale_period)
+        prices_df = prices.loc[start_date:end_date]
+        sale = np.sum(prices_df['Adj Close'] * MAX_QTY/days)
 
-      print(f'{start_date} to {end_date}: ${round(sale):,}')
+        print(f'{start_date} to {end_date}: ${round(sale):,}')
     print()
 
 main()

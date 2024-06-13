@@ -53,7 +53,6 @@ def select_max_greek_contract(chain, greek_key='delta'):
 
 
 def filter_historical_prices(symbol, prices):
-  earnings_dates = set(fetch_past_earnings_dates(symbol))
   if not earnings_dates or not SHOULD_AVOID_EARNINGS:
     return prices
 
@@ -67,30 +66,35 @@ def filter_historical_prices(symbol, prices):
   return filtered_prices
 
 
-def calc_historical_price_movement_stats(prices, period=1, ax=None):
+def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
+  earnings_dates = list(reversed(fetch_past_earnings_dates(symbol)))  # sorted in most recent first
 
-  price_moves = []
+  if not earnings_dates and SHOULD_AVOID_EARNINGS:
+    raise ValueError('No earnings dates found.')
 
   high_52 = 0
   low_52 = 1_000_000_000
   year_ago = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
 
-  # iterate from 0 to len - period
-  for i in range(0, len(prices) - period):
+  change_df = pd.DataFrame({
+    'date': prices_df['date'],
+    'change': prices_df['close'].pct_change(periods=periods),
+    'ref date': prices_df['date'].shift(periods)
+  })
 
-    price_move = (prices[i + period]['close'] - prices[i]['close'])/prices[i]['close']
-    price_moves.append(price_move)
+  # Loop through earnings and remove affected rows.
+  this_df = pd.DataFrame()
+  for i, earnings_date in enumerate(earnings_dates[:-1]):
+    next_earnings_date = earnings_dates[i+1]
+    earnings_df = change_df[(earnings_date < change_df['date']) & (earnings_date < change_df['ref date']) & (change_df['date'] < next_earnings_date)]
 
-    # Store high and lows for past year.
-    if prices[i]['close'] > high_52 and prices[i]['date'] > year_ago:
-      high_52 = prices[i]['close']
+    this_df = pd.concat([this_df, earnings_df], ignore_index=True)
 
-    if prices[i]['close'] < low_52 and prices[i]['date'] > year_ago:
-      low_52 = prices[i]['close']
-
-  mean = statistics.mean(price_moves)
-  stdev = statistics.stdev(price_moves)
-  size = len(price_moves)
+  mean = this_df['change'].mean()
+  stdev = this_df['change'].std()
+  year_ago_df = prices_df[(prices_df['date'] > year_ago)]
+  high_52 = year_ago_df['close'].max()
+  low_52 = year_ago_df['close'].min()
 
   if ax:
     min_bin = min(price_moves)
@@ -105,7 +109,7 @@ def calc_historical_price_movement_stats(prices, period=1, ax=None):
     ax.plot(x, y, label='Normalized Gaussian')
 
   # return avg, stdev
-  return mean, stdev, high_52, low_52, size
+  return mean, stdev, high_52, low_52
 
 
 def fetch_filtered_options_expirations(symbol, expiry_days=None):
@@ -217,34 +221,35 @@ def should_sell_csep(contract, exp_strike):
 
 
 def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None):
-  historical_prices = fetch_historical_prices(symbol, start_date)
-  last_close = historical_prices[-1]['close']
-  last_move = (historical_prices[-1]['close'] - historical_prices[-2]['close'])/historical_prices[-2]['close']
-  printout(f'\033[01mLatest price: {last_close}, {"+" if last_move > 0 else ""}{round(last_move * 100, 2)}%\033[0m')
-
-  prices = filter_historical_prices(symbol, historical_prices)
+  prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
+  last_close = prices_df.iloc[-1]['close']
 
   best_expiry, days_to_best_expiry = fetch_optimal_option_expiry(symbol, last_close)
 
-  worthy_contracts = []
-
   # Calculate average price change and sigma of 1 day.
-  mu, sigma, high_52, low_52, size = calc_historical_price_movement_stats(prices, period=1, ax=ax)
+  mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=days_to_best_expiry, ax=ax)
+
+  last_move = (last_close - prices_df.iloc[-2]['close'])/prices_df.iloc[-2]['close']
+  printout(f'\033[01mLatest price: {last_close}, {"+" if last_move > 0 else ""}{round(last_move * 100, 2)}%\033[0m')
 
   # Find covered calls to sell.
   printout(f'52 week high: {high_52}')
 
-  # Pull closest strike to S (= expected avg+1 sigma) and delta D of chain.
-  zscore = 0
-  cc_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, zscore)
 
-  historical_itm_proba = backtest.calc_historical_itm_proba(symbol, prices, mu, sigma, days_to_best_expiry)
+  worthy_contracts = []
+
+
+  # Pull closest strike to S (= expected avg+1 sigma) and delta D of chain.
+  zscore = 1
+  cc_exp_strike = calc_expected_strike(last_close, mu, sigma, 1, zscore)
+
+  historical_itm_proba = backtest.calc_historical_itm_proba(symbol, prices_df, mu, sigma, days_to_best_expiry, zscore)
 
   printout(f'My expected *{zscore}* sigma move price: \033[32m{round(cc_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
   printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
   printout(f'Historical delta for +1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
 
-  this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=last_close*3*sigma)
+  this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=last_close*sigma*0.5)
 
   for i, _contract in enumerate(this_chain):
     contract = _contract.copy()
@@ -265,14 +270,15 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   # Do same thing for CSEP.
   printout(f'52 week low: {low_52}')
 
-  csep_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, zscore)
+  zscore = -1
+  csep_exp_strike = calc_expected_strike(last_close, mu, sigma, 1, zscore)
 
 
   printout(f'My expected *{zscore}* sigma move price: \033[32m{round(csep_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
   printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
 #  printout(f'Historical delta for -1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
 
-  this_chain = fetch_options_chain(symbol, best_expiry, 'put', csep_exp_strike, plus_minus=last_close*3*sigma)
+  this_chain = fetch_options_chain(symbol, best_expiry, 'put', csep_exp_strike, plus_minus=last_close*sigma*0.5)
 
   for _contract in this_chain:
     contract = _contract.copy()

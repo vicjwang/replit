@@ -97,18 +97,17 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
   low_52 = year_ago_df['close'].min()
 
   if ax:
-    min_bin = min(price_moves)
-    max_bin = max(price_moves)
+    min_bin = this_df['change'].min()
+    max_bin = this_df['change'].max()
     x = np.arange(min_bin, max_bin, 0.001)
 
-    ax.hist(price_moves, bins=x)
-    ax.legend(title=f'Period={period}')
+    ax.hist(this_df['change'], bins=x)
+    ax.legend(title=f'Period={periods}')
 
     # Graph normalized Gaussian.
     y = norm.pdf(x, mean, stdev)
     ax.plot(x, y, label='Normalized Gaussian')
 
-  # return avg, stdev
   return mean, stdev, high_52, low_52
 
 
@@ -186,7 +185,7 @@ def pprint_contract(contract):
   return
 
 
-def should_sell_cc(contract, exp_strike):
+def should_sell_cc(contract, exp_strike, zscore):
   # Strategy: if market thinks strike at delta = 0.158 is HIGHER than my expected +1 sigma strike, sell covered call.
   #    aka Rule: if strike(delta=0.158) > S, sell CC.
   #
@@ -199,8 +198,10 @@ def should_sell_cc(contract, exp_strike):
   delta = contract['greeks']['delta']
   roi = contract['annual_roi']
 
-  is_market_overest = (strike - exp_strike)/exp_strike > -0.02 and delta > REFERENCE_CONFIDENCE
-  is_delta_notable = REFERENCE_CONFIDENCE <= delta <= NOTABLE_DELTA_MAX
+  confidence = REFERENCE_CONFIDENCE[zscore]
+
+  is_market_overest = (strike - exp_strike)/exp_strike > -0.02 and delta > confidence
+  is_delta_notable = confidence <= delta <= NOTABLE_DELTA_MAX
   is_roi_worthy = roi > WORTHY_ROI
 
   should_sell = is_roi_worthy and any([
@@ -211,11 +212,11 @@ def should_sell_cc(contract, exp_strike):
   return should_sell
 
 
-def should_sell_csep(contract, exp_strike):
+def should_sell_csep(contract, exp_strike, zscore):
   strike = contract['strike']
   delta = contract['greeks']['delta']
 
-  should_sell = (strike - exp_strike)/exp_strike > -0.02 and delta > REFERENCE_CONFIDENCE
+  should_sell = (strike - exp_strike)/exp_strike > -0.02 and delta > REFERENCE_CONFIDENCE[zscore]
   printout(f' Sell csep? {should_sell}')
   return should_sell
 
@@ -227,7 +228,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   best_expiry, days_to_best_expiry = fetch_optimal_option_expiry(symbol, last_close)
 
   # Calculate average price change and sigma of 1 day.
-  mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=days_to_best_expiry, ax=ax)
+  mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=ax)
 
   last_move = (last_close - prices_df.iloc[-2]['close'])/prices_df.iloc[-2]['close']
   printout(f'\033[01mLatest price: {last_close}, {"+" if last_move > 0 else ""}{round(last_move * 100, 2)}%\033[0m')
@@ -235,21 +236,19 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   # Find covered calls to sell.
   printout(f'52 week high: {high_52}')
 
-
   worthy_contracts = []
 
-
+  zscore = 0
   # Pull closest strike to S (= expected avg+1 sigma) and delta D of chain.
-  zscore = 1
-  cc_exp_strike = calc_expected_strike(last_close, mu, sigma, 1, zscore)
+  cc_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, zscore)
 
   historical_itm_proba = backtest.calc_historical_itm_proba(symbol, prices_df, mu, sigma, days_to_best_expiry, zscore)
 
-  printout(f'My expected *{zscore}* sigma move price: \033[32m{round(cc_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
+  printout(f'My expected *{zscore}* sigma move price: \033[32m{round(cc_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE[zscore]*100}% confidence)')
   printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
-  printout(f'Historical delta for +1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
+  printout(f'Historical delta for {zscore} sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
 
-  this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=last_close*sigma*0.5)
+  this_chain = fetch_options_chain(symbol, best_expiry, 'call', cc_exp_strike, plus_minus=last_close*sigma)
 
   for i, _contract in enumerate(this_chain):
     contract = _contract.copy()
@@ -261,7 +260,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
     else:
       pprint_contract(contract)
 
-    should_sell = last_move > .3*sigma and should_sell_cc(contract, cc_exp_strike)
+    should_sell = last_move > .3*sigma and should_sell_cc(contract, cc_exp_strike, zscore)
     if should_sell:
       worthy_contracts.append(contract)
 
@@ -270,21 +269,19 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   # Do same thing for CSEP.
   printout(f'52 week low: {low_52}')
 
-  zscore = -1
-  csep_exp_strike = calc_expected_strike(last_close, mu, sigma, 1, zscore)
+  csep_exp_strike = calc_expected_strike(last_close, mu, sigma, days_to_best_expiry, -1*zscore)
 
-
-  printout(f'My expected *{zscore}* sigma move price: \033[32m{round(csep_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE*100}% confidence)')
+  printout(f'My expected *-{zscore}* sigma move price: \033[32m{round(csep_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE[zscore]*100}% confidence)')
   printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
 #  printout(f'Historical delta for -1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
 
-  this_chain = fetch_options_chain(symbol, best_expiry, 'put', csep_exp_strike, plus_minus=last_close*sigma*0.5)
+  this_chain = fetch_options_chain(symbol, best_expiry, 'put', last_close, plus_minus=last_close*sigma*2)
 
   for _contract in this_chain:
     contract = _contract.copy()
     contract['annual_roi'] = calc_annual_roi(contract)
     pprint_contract(contract)
-    should_sell = should_sell_csep(contract, csep_exp_strike)
+    should_sell = should_sell_csep(contract, csep_exp_strike, zscore)
     if should_sell:
       worthy_contracts.append(contract)
 

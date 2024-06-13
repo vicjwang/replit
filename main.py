@@ -14,8 +14,8 @@ from constants import SHOULD_AVOID_EARNINGS
 from utils import printout, get_option_contract_str
 
 
-SHOW_GRAPH = False
-RENDER_FIG = False
+SHOW_GRAPH = True
+RENDER_FIG = True
 
 SHOW_TICKERS = defaultdict(
   bool,
@@ -39,7 +39,7 @@ SHOW_TICKERS = defaultdict(
     SNAP=1,  # cc
  #   SQ=1,
  #   TSLA=1,
- #   TWLO=1,  # cc
+    TWLO=1,  # cc
 #    TSM=1,
  #   TXN=1,
   )

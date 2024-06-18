@@ -13,17 +13,19 @@ from constants import SHOULD_AVOID_EARNINGS
 
 from utils import printout, get_option_contract_str
 
+import yfinance as yf
+
 
 SHOW_GRAPH = False
 RENDER_FIG = False
 
 COVERED_CALLS = dict(
-  #DDOG=1,  # cc
+  DDOG=1,  # cc
   DIS=1,  # cc
-  #OKTA=1,  # cc
-  #MDB=1,  # cc
-  #SNAP=1,  # cc
-  #TWLO=1,  # cc
+  OKTA=1,  # cc
+  MDB=1,  # cc
+  SNAP=1,  # cc
+  TWLO=1,  # cc
 )
 
 CSEPs = dict(
@@ -228,3 +230,6 @@ def main():
 
 if __name__ == '__main__':
   main()
+  #msft = yf.Ticker("MSFT")
+  #earnings_dates = [x.date() for x in msft.get_earnings_dates(limit=28).index]
+  #print(earnings_dates)

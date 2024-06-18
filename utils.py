@@ -1,7 +1,10 @@
 import os
 import math
 import pandas as pd
+from datetime import datetime
 from constants import IS_VERBOSE, REFERENCE_CONFIDENCE
+import yfinance as yf
+
 
 
 def get_option_contract_str(contract):
@@ -34,8 +37,14 @@ def calc_expected_strike(current_price, mu, sigma, n, zscore):
   exp_strike = current_price * (1 + n*mu + zscore*n*sigma)
   return exp_strike
 
+def fetch_earnings_dates(symbol):
+  stock = yf.Ticker(symbol)
+  earnings_dates = [x.date() for x in stock.get_earnings_dates(limit=28).index]
+  return earnings_dates
 
 def fetch_past_earnings_dates(symbol):
+
+  '''
   filepath = f'earnings_dates/{symbol.lower()}.csv'
   if not os.path.exists(filepath):
     return []
@@ -43,6 +52,13 @@ def fetch_past_earnings_dates(symbol):
     dates = f.read().splitlines()
     return dates
 
+  '''  
+  earnings_dates = fetch_earnings_dates(symbol)
+  return [x for x in pd.to_datetime(earnings_dates) if x < datetime.now()]
+
+def get_next_earnings_date(symbol):
+  earnings_dates = fetch_earnings_dates(symbol)
+  return [x for x in earnings_dates if x > datetime.now().date()][-1]
 
 def count_trading_days(start_date, end_date):
   # Ensure the dates are in the correct format

@@ -17,6 +17,7 @@ from utils import (
   fetch_past_earnings_dates, printout,
   count_trading_days,
   calc_expected_strike,
+  get_next_earnings_date,
 )
 
 from tradier import (
@@ -77,9 +78,9 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
   year_ago = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
 
   change_df = pd.DataFrame({
-    'date': prices_df['date'],
+    'date': pd.to_datetime(prices_df['date']),
     'change': prices_df['close'].pct_change(periods=periods),
-    'ref date': prices_df['date'].shift(periods)
+    'ref date': pd.to_datetime(prices_df['date'].shift(periods))
   })
   
   if earnings_dates:
@@ -92,7 +93,10 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
       this_df = pd.concat([this_df, earnings_df], ignore_index=True)
   else:
     this_df = change_df
-  
+
+  if SHOULD_AVOID_EARNINGS:
+    assert len(this_df) < len(prices_df)
+
   mean = this_df['change'].mean()
   stdev = this_df['change'].std()
   year_ago_df = prices_df[(prices_df['date'] > year_ago)]
@@ -123,7 +127,8 @@ def fetch_filtered_options_expirations(symbol, expiry_days=None):
   default_date = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
 
   # NOTE next earnings call date - consider up to week before earnings.
-  next_earnings_date = fetch_next_earnings_date(symbol)
+  #next_earnings_date = fetch_next_earnings_date(symbol)
+  next_earnings_date = str(get_next_earnings_date(symbol))
 
   # String comparisons default to 'z' to ensure min works properly.
   date_cutoff = min(next_earnings_date or 'z', expiry_date or 'z', default_date)

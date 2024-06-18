@@ -14,34 +14,45 @@ from constants import SHOULD_AVOID_EARNINGS
 from utils import printout, get_option_contract_str
 
 
-SHOW_GRAPH = True
-RENDER_FIG = True
+SHOW_GRAPH = False
+RENDER_FIG = False
+
+COVERED_CALLS = dict(
+  #DDOG=1,  # cc
+  DIS=1,  # cc
+  #OKTA=1,  # cc
+  #MDB=1,  # cc
+  #SNAP=1,  # cc
+  #TWLO=1,  # cc
+)
+
+CSEPs = dict(
+  AAPL=1,
+  ABNB=1,
+  AMZN=1,
+  #CRM=1,
+  #CRWD=1,
+
+  GOOG=1,
+
+  #META=1,
+
+  GME=1,
+  #MSFT=1,
+  MSTR=1,
+  NVDA=1,
+  SHOP=1,
+  SQ=1,
+  TSLA=1,
+  TSM=1,
+  TXN=1,
+)
 
 SHOW_TICKERS = defaultdict(
   bool,
   dict(
-    #AAPL=1,
-  #  ABNB=1,
-  #  AMZN=1,
- #   CRM=1,
-  #  CRWD=1,
-#    DDOG=1,  # cc
-    DIS=1,  # cc
-  #  GOOG=1,
-    OKTA=1,  # cc
-  #  META=1,
-    MDB=1,  # cc
-    #GME=1,
-#    MSFT=1,
-    #MSTR=1,
-    #NVDA=1,
-  #  SHOP=1,
-    SNAP=1,  # cc
- #   SQ=1,
- #   TSLA=1,
-    TWLO=1,  # cc
-#    TSM=1,
- #   TXN=1,
+    #**COVERED_CALLS,
+    **CSEPs,
   )
 )
 

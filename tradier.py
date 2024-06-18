@@ -53,6 +53,7 @@ def fetch_options_chain(symbol, expiry_date, option_type=None, ref_price=None, p
     chain = [option for option in chain if option['option_type'] == option_type]
 
   chain = sorted(chain, key=lambda option: option['strike'])
+  
   return chain
 
 

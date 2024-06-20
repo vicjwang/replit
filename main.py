@@ -3,21 +3,32 @@ import pickle
 import pandas as pd
 import requests
 import matplotlib.pyplot as plt
+import traceback
 
 from datetime import datetime
 
-from analyze_options import determine_overpriced_option_contracts
-from collections import namedtuple, defaultdict
+from analyze_options import determine_overpriced_option_contracts, show_worthy_contracts
+from collections import defaultdict
 #from analyze_fundamentals import graph_historical_valuations
-from constants import SHOULD_AVOID_EARNINGS
+from constants import (
+  SHOULD_AVOID_EARNINGS,
+  PLT_WIDTH,
+  PLT_HEIGHT,
+  TICKERS,
+)
 
 from utils import printout, get_option_contract_str
 
 import yfinance as yf
 
 
-SHOW_GRAPH = False
-RENDER_FIG = False
+SHOW_GRAPH = True
+RENDER_FIG = True
+
+TEST_SYMBOL = dict(
+  TSM=1,
+  #AAPL=1
+)
 
 COVERED_CALLS = dict(
   DDOG=1,  # cc
@@ -30,18 +41,18 @@ COVERED_CALLS = dict(
 
 CSEPs = dict(
   AAPL=1,
-  ABNB=1,
-  AMZN=1,
+  #ABNB=1,
+  #AMZN=1,
   #CRM=1,
   #CRWD=1,
 
-  GOOG=1,
+  #GOOG=1,
 
   #META=1,
 
-  GME=1,
+  #GME=1,
   #MSFT=1,
-  MSTR=1,
+  #MSTR=1,
   NVDA=1,
   SHOP=1,
   SQ=1,
@@ -53,47 +64,16 @@ CSEPs = dict(
 SHOW_TICKERS = defaultdict(
   bool,
   dict(
-    #**COVERED_CALLS,
+    **COVERED_CALLS,
     **CSEPs,
+    #**TEST_SYMBOL
   )
 )
-
 
 
 START_DATE = '2023-01-01'  # rate cut?
 #START_DATE = '2020-04-01' # COVID
 EXPIRY_DAYS = None
-
-Ticker = namedtuple('Ticker', ['symbol', 'name', 'next_earnings'], defaults=(None, None, None))
-
-TICKERS = [
-  Ticker('AAPL', name='Apple Inc.', next_earnings='2024-07-26'),
-  Ticker(symbol='ABNB', name='Airbnb', next_earnings='2024-08-01'),
-  Ticker(symbol='AMZN', name='amazon', next_earnings='2024-08-01'),
-  Ticker(symbol='BRK/B', name='berkshire'),
-  Ticker('CRM', name='Salesforce'),
-  Ticker(symbol='CRWD', name='crowdstrike', next_earnings='2024-06-04'),
-  Ticker(symbol='DIS', name='disney', next_earnings='2024-08-14'),
-  Ticker(symbol='DDOG', name='datadog', next_earnings='2024-08-07'),
-  Ticker(symbol='GOOG', name='google', next_earnings='2024-07-23'),
-  Ticker(symbol='HTZ', name='hertz'),
-  Ticker(symbol='META', name='facebook', next_earnings='2024-07-24'),
-  Ticker(symbol='MDB', name='mongodb', next_earnings='2024-08-30'),
-  Ticker(symbol='MSFT', name='microsoft', next_earnings='2024-07-22'),
-  Ticker(symbol='MSTR', name='Microstrategy', next_earnings='2024-07-30'),
-  Ticker(symbol='NET', name='Cloudflare', next_earnings='2024-08-01'),
-  Ticker(symbol='NVDA', name='nvidia', next_earnings='2024-08-21'),
-  Ticker(symbol='OKTA', name='okta', next_earnings='2024-08-29'),
-  Ticker(symbol='SHOP', name='Shopify', next_earnings='2024-08-07'),
-  Ticker(symbol='SNAP', name='snapchat', next_earnings='2024-07-23'),
-  Ticker(symbol='SQ', name='Square'),
-  Ticker(symbol='SVOL', name='SVOL'),
-  Ticker(symbol='TSLA', name='tesla', next_earnings='2024-07-16'),
-  Ticker(symbol='TWLO', name='twilio', next_earnings='2024-08-13'),
-  Ticker(symbol='TSM', name='TSM', next_earnings='2024-07-18'),
-  Ticker(symbol='TXN', name='Texas Instruments', next_earnings='2024-07-23'),
-  #Ticker(symbol='GME', name='Gamestop'),
-]
 
 
 def cache():
@@ -164,7 +144,9 @@ def graph_historical(x, y, mean, title, ax):
   ax.plot(x, [mean] * len(x), color='r', linestyle='--')
 
 
-
+def setup_plots(num_rows, num_cols):
+  fig, axes = plt.subplots(num_rows, num_cols, figsize=(PLT_WIDTH, PLT_HEIGHT * 6))
+  return fig, axes
 
 
 def main():
@@ -172,10 +154,8 @@ def main():
   tickers = sorted([ticker for ticker in TICKERS if SHOW_TICKERS[ticker.symbol] == 1], key=lambda t: t.symbol)
 
   start_date = START_DATE
-  PLT_WIDTH = 13.5
-  PLT_HEIGHT = 2.5
-
-  fig = plt.figure(figsize=(PLT_WIDTH, PLT_HEIGHT * 6)) if RENDER_FIG else None
+  
+  fig, axes = setup_plots(len(tickers), 2)
 
   contracts = []
 
@@ -183,7 +163,14 @@ def main():
     printout('#' * 70)
     print(ticker)
 
-    ax = fig.add_subplot(len(tickers), 2, i + 1) if fig else None
+    row_i = i // 2
+    col_j = i % 2
+
+    if (len(tickers) < 2):
+      ax = axes[i]
+    else:
+      ax = axes[row_i, col_j]
+    #fig.add_subplot(len(tickers), 2, i + 1) if fig else None
     if ax:
       ax.set_title(ticker.name)
 
@@ -225,11 +212,52 @@ def main():
   if SHOW_GRAPH:
     printout('Rendering plot in Output tab...')
     plt.tight_layout()
+    fig.subplots_adjust() 
     plt.show()
 
 
+def graph_main():
+
+  tickers = sorted([ticker for ticker in TICKERS if SHOW_TICKERS[ticker.symbol] == 1], key=lambda t: t.symbol)
+
+  # add some extra rows for visibility on iPad
+  ncols = 2
+  fig, axes = setup_plots(5, ncols)
+
+  plot_index = 0
+  
+  for ticker in tickers:
+    symbol = ticker.symbol
+    row_index = plot_index // 2
+    col_index = plot_index % 2
+
+    if symbol in COVERED_CALLS:
+      option_type = 'call'
+    elif symbol in CSEPs:
+      option_type = 'put'
+    else:
+      print(f'Unclassified symbol: {symbol}..')
+      continue
+
+    try:
+      if ncols == 1:
+        show_worthy_contracts(symbol, option_type, axes[plot_index])
+      else:
+        show_worthy_contracts(symbol, option_type, axes[row_index, col_index])
+      plot_index += 1
+
+    except Exception as e:
+      print(f'Skipping to graph {symbol}: {e}')
+      traceback.print_exc()
+      continue
+
+  print('Rendering plot in Output tab...')
+  plt.tight_layout()
+  fig.subplots_adjust(bottom=0.1)
+  plt.show()
+
 if __name__ == '__main__':
-  main()
-  #msft = yf.Ticker("MSFT")
-  #earnings_dates = [x.date() for x in msft.get_earnings_dates(limit=28).index]
-  #print(earnings_dates)
+  #main()
+  graph_main()
+
+

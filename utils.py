@@ -1,10 +1,28 @@
 import os
 import math
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from constants import IS_VERBOSE, REFERENCE_CONFIDENCE
 import yfinance as yf
 
+
+def calc_dte(expiry: str):
+  today = datetime.now()
+  expiry_dt = datetime.strptime(expiry, '%Y-%m-%d') + timedelta(days=1)
+
+  trading_dte = len(pd.date_range(start=today, end=expiry_dt, freq='B'))
+  return trading_dte
+  
+
+def calc_annual_roi(contract) -> float:
+  strike = contract['strike']
+  expiry_date = datetime.strptime(contract['expiration_date'], '%Y-%m-%d').date()
+  bid = contract['bid']
+  days_to_expiry = (expiry_date - datetime.now().date()).days
+  
+  roi = bid / strike
+  annual_roi = roi / days_to_expiry * 365 if days_to_expiry > 0 else roi * 365
+  return annual_roi
 
 
 def get_option_contract_str(contract):
@@ -34,8 +52,9 @@ def printout(s=''):
 
 
 def calc_expected_strike(current_price, mu, sigma, n, zscore):
-  exp_strike = current_price * (1 + n*mu + zscore*n*sigma)
+  exp_strike = current_price * (1 + n*mu + zscore*math.sqrt(n)*sigma)
   return exp_strike
+
 
 def fetch_earnings_dates(symbol):
   stock = yf.Ticker(symbol)

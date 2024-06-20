@@ -1,3 +1,4 @@
+from logging import raiseExceptions
 import statistics
 import math
 import sys
@@ -18,6 +19,7 @@ from utils import (
   count_trading_days,
   calc_expected_strike,
   get_next_earnings_date,
+  calc_dte,
 )
 
 from tradier import (
@@ -35,7 +37,11 @@ from constants import (
   START_DATE,
   NOTABLE_DELTA_MAX,
   WORTHY_ROI,
+  MU,
+  SIGMA_LOWER,
 )
+
+from graphical import render_roi_vs_expiry
 
 
 def select_max_greek_contract(chain, greek_key='delta'):
@@ -103,6 +109,7 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
   high_52 = year_ago_df['close'].max()
   low_52 = year_ago_df['close'].min()
 
+  '''
   if ax:
     min_bin = this_df['change'].min()
     max_bin = this_df['change'].max()
@@ -115,6 +122,8 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
     y = norm.pdf(x, mean, stdev)
     ax.plot(x, y, label='Normalized Gaussian')
 
+  '''
+  
   return mean, stdev, high_52, low_52
 
 
@@ -164,17 +173,6 @@ def fetch_optimal_option_expiry(symbol, last_close, expiry_days=None):
   printout(f'max theta expiry: {max_theta_expiry}\n')
 
   return max_iv_expiry, days_to_expiry
-
-
-def calc_annual_roi(contract):
-  strike = contract['strike']
-  expiry_date = contract['expiration_date']
-  bid = contract['bid']
-  days_to_expiry = (datetime.strptime(expiry_date, '%Y-%m-%d').date() - date.today()).days
-
-  roi = bid / strike
-  annualized_roi = roi * 365 / days_to_expiry
-  return annualized_roi
 
 
 def pprint_contract(contract):
@@ -239,10 +237,11 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=ax)
 
   last_move = (last_close - prices_df.iloc[-2]['close'])/prices_df.iloc[-2]['close']
-  printout(f'\033[01mLatest price: {last_close}, {"+" if last_move > 0 else ""}{round(last_move * 100, 2)}%\033[0m')
+  printout(f'\033[01mLatest price: {last_close}, {"+" if last_move > 0 else ""} {round(last_move * 100, 2)}%\033[0m')
 
   worthy_contracts = []
-  
+
+  '''
   if last_move > 0:
 
     # Find covered calls to sell.
@@ -277,19 +276,19 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
     printout('\n' + '*' * 10 + '\n')
 
   else:
-    
+
     # Do same thing for CSEP.
     printout(f'52 week low: {low_52}')
-  
+
     zscore = -3
     csep_exp_strike = last_close * (1 + zscore*sigma)
-  
+
     printout(f'My expected *{zscore}* sigma move price: \033[32m{round(csep_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE[zscore]*100}% confidence)')
     printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
   #  printout(f'Historical delta for -1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
-  
+
     this_chain = fetch_options_chain(symbol, best_expiry, 'put', csep_exp_strike, plus_minus=last_close*sigma*2)
-  
+
     for _contract in this_chain:
       contract = _contract.copy()
       contract['annual_roi'] = calc_annual_roi(contract)
@@ -297,6 +296,51 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
       should_sell = should_sell_csep(contract, csep_exp_strike, zscore)
       if should_sell:
         worthy_contracts.append(contract)
-
+  
+  '''
+  
   return worthy_contracts
 
+
+def show_worthy_contracts(symbol: str, option_type: str, ax):
+  start_date = START_DATE
+  # Calculate average price change and sigma of 1 day.
+  prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
+  mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
+  
+  last_price = get_last_price(symbol)
+  last_close = prices_df.iloc[-2]['close']
+  last_change = (last_price - last_close) / last_close
+
+  next_earnings_date = get_next_earnings_date(symbol)
+  
+  expirations = [x for x in fetch_options_expirations(symbol) if x < str(next_earnings_date)]
+
+  chains = []
+  for expiry in expirations:
+    chain = fetch_options_chain(symbol, expiry, option_type=option_type, ref_price=last_price, plus_minus=last_price * 0.2)
+    dte = calc_dte(expiry)
+    
+    if option_type == 'call' and last_change > 0 * sigma:
+      zscore = 1 #last_price * (1 + 20 * mu + sigma)
+    elif option_type == 'put' and last_change < 0 * sigma:
+      zscore = -1 #last_price * (1 + -3 * sigma)
+    else:
+      raise ValueError(f'Skipping - {symbol} move threshold not met.')
+
+    for contract in chain:
+      contract['target_strike'] = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
+    
+    chains.append(chain)
+
+  params = dict(
+    title = f'{symbol} {option_type}: Strikes @ Z-Score={zscore} ({REFERENCE_CONFIDENCE[zscore]} confidence)',
+    text = '\n'.join((
+     f'\${last_price}, {round(last_change * 100, 2)}%',
+     f'{MU}={mu * 100:.2f}%',
+     f'{SIGMA_LOWER}={sigma * 100:.2f}%',
+    )),
+    ylabel= 'Annual ROI',
+  )
+  render_roi_vs_expiry(symbol, chains, last_price, ax=ax, params=params)
+  

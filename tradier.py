@@ -21,10 +21,10 @@ def make_api_request(endpoint, params):
   return json_response
 
 
-def get_last_price(symbol):
+def get_last_price(symbol: str) -> float:
   endpoint = 'https://api.tradier.com/v1/markets/quotes'
-  params = {'symbols': 'symbol', 'greeks': 'false'}
-  return make_api_request(symbol)
+  params = {'symbols': symbol, 'greeks': 'false'}
+  return make_api_request(endpoint, params)['quotes']['quote']['last']
 
 
 def fetch_historical_prices(symbol, start_date, end_date = None):

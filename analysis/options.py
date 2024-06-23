@@ -22,7 +22,7 @@ from utils import (
   calc_dte,
 )
 
-from tradier import (
+from vendors.tradier import (
   make_api_request,
   get_last_price,
   fetch_historical_prices,

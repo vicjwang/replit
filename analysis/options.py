@@ -36,7 +36,7 @@ from constants import (
   REFERENCE_CONFIDENCE,
   START_DATE,
   NOTABLE_DELTA_MAX,
-  WORTHY_ROI,
+  WORTHY_MIN_ROI,
   MU,
   SIGMA_LOWER,
 )
@@ -109,7 +109,6 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
   high_52 = year_ago_df['close'].max()
   low_52 = year_ago_df['close'].min()
 
-  '''
   if ax:
     min_bin = this_df['change'].min()
     max_bin = this_df['change'].max()
@@ -122,8 +121,7 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
     y = norm.pdf(x, mean, stdev)
     ax.plot(x, y, label='Normalized Gaussian')
 
-  '''
-  
+  printout(f'\n{symbol}: {MU}={mean} {SIGMA_LOWER}={stdev} high52=${high_52} low52=${low_52}\n')
   return mean, stdev, high_52, low_52
 
 
@@ -208,7 +206,7 @@ def should_sell_cc(contract, exp_strike, zscore):
 
   is_market_overest = (strike - exp_strike)/exp_strike > -0.02 and delta > confidence
   is_delta_notable = confidence <= delta <= NOTABLE_DELTA_MAX
-  is_roi_worthy = roi > WORTHY_ROI
+  is_roi_worthy = roi > WORTHY_MIN_ROI
 
   should_sell = is_roi_worthy and any([
     is_market_overest,
@@ -307,13 +305,15 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
   # Calculate average price change and sigma of 1 day.
   prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
   mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
+
   
   last_price = get_last_price(symbol)
   last_close = prices_df.iloc[-2]['close']
   last_change = (last_price - last_close) / last_close
 
   next_earnings_date = get_next_earnings_date(symbol)
-  
+
+  _expirations = fetch_options_expirations(symbol)
   expirations = [x for x in fetch_options_expirations(symbol) if x < str(next_earnings_date)]
 
   chains = []
@@ -329,7 +329,8 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
       raise ValueError(f'Skipping - {symbol} move threshold not met.')
 
     for contract in chain:
-      contract['target_strike'] = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
+      target_strike = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
+      contract['target_strike'] = target_strike
     
     chains.append(chain)
 

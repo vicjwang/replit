@@ -4,7 +4,9 @@ import pandas as pd
 
 from utils import calc_annual_roi
 
-from constants import DELTA_UPPER
+from constants import (
+  DELTA_UPPER, WORTHY_MIN_BID, WORTHY_MIN_ROI
+)
 
 
 def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
@@ -22,14 +24,14 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
   df['annual_roi'] = df.apply(calc_annual_roi, axis=1)
 
   # Capture closest strikes.
-  buffer = max(round(atm_strike / 90), 0.50)
+  buffer = max(round(atm_strike * 0.05), 0.50)
   buffer_mask = (abs(df['strike'] - df['target_strike']) < buffer)
 
   # ROI needs to be worth it plus ROI becomes linear when too itm so remove.
-  roi_mask = (df['annual_roi'] > 0.2) & (df['annual_roi'] < 1)
+  roi_mask = (df['annual_roi'] > WORTHY_MIN_ROI) & (df['annual_roi'] < 1)
 
   # Cash needs to be worth it per contract.
-  cash_mask = (df['bid'] > 0.7) 
+  cash_mask = (df['bid'] > WORTHY_MIN_BID) 
 
   mask = buffer_mask & roi_mask & cash_mask
   
@@ -38,9 +40,13 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
   strikes = df[mask]['strike']
   bids = df[mask]['bid']
   deltas = df[mask]['delta']
+  target_strikes = df[mask]['target_strike']
+
+  for e, t in sorted(set(zip(expirations, target_strikes))):
+    print(f'{symbol}: {e} target={t:.2f}')
 
   if len(expirations) == 0:
-    raise ValueError(f'No suitable options found for {symbol}.')
+    raise ValueError(f'No eligible options found for {symbol}.')
 
   # Graph of ROI vs Expirations.
   ax.plot(expirations, rois)

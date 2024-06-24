@@ -1,9 +1,13 @@
 from collections import namedtuple
 
 
-IS_VERBOSE = True
+IS_VERBOSE = False
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
+USE_EARNINGS_CSV = True
+
+WORTHY_MIN_BID = 0.7
+WORTHY_MIN_ROI = 0.2
 
 REFERENCE_CONFIDENCE = {
   0: 0.5,
@@ -12,10 +16,9 @@ REFERENCE_CONFIDENCE = {
   -3: .99,
 }
 NOTABLE_DELTA_MAX = .2
-WORTHY_ROI = 0.2
 
-PLT_WIDTH = 13.5
-PLT_HEIGHT = 2.5
+FIG_WIDTH = 13.5
+FIG_HEIGHT = 7.5
 
 
 # Using Unicode escape sequences

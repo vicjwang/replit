@@ -2,6 +2,7 @@ import os
 import pickle
 import pandas as pd
 import requests
+import math
 import matplotlib.pyplot as plt
 import traceback
 import yfinance as yf
@@ -11,9 +12,26 @@ from datetime import datetime
 
 from analysis.options import show_worthy_contracts
 from constants import (
-  PLT_WIDTH,
-  PLT_HEIGHT,
+  FIG_WIDTH,
+  FIG_HEIGHT,
   TICKERS,
+)
+
+
+def get_tickers():
+  return defaultdict(
+    bool,
+    dict(
+      **COVERED_CALLS,
+      #**CSEPs,
+      #**TEST_SYMBOLS
+    )
+  )
+
+
+TEST_SYMBOLS = dict(
+  SNAP=1,
+  NVDA=1,
 )
 
 
@@ -22,11 +40,6 @@ NCOLS = 2
 START_DATE = '2023-01-01'  # rate cut expectation
 #START_DATE = '2020-04-01' # COVID
 
-
-TEST_SYMBOLS = dict(
-  TSM=1,
-  #AAPL=1
-)
 
 COVERED_CALLS = dict(
   DDOG=1,  # cc
@@ -59,18 +72,11 @@ CSEPs = dict(
   TXN=1,
 )
 
-SHOW_TICKERS = defaultdict(
-  bool,
-  dict(
-    #**COVERED_CALLS,
-    #**CSEPs,
-    **TEST_SYMBOLS
-  )
-)
+SHOW_TICKERS = get_tickers()
 
 
 def setup_figure(num_rows, num_cols):
-  fig, axes = plt.subplots(num_rows, num_cols, figsize=(PLT_WIDTH, PLT_HEIGHT * 6))
+  fig, axes = plt.subplots(num_rows, num_cols, figsize=(FIG_WIDTH, FIG_HEIGHT))
   return fig, axes
 
 
@@ -80,8 +86,9 @@ def run_sell_options_strategy():
 
   # add some extra rows for visibility on iPad
   ncols = NCOLS
-  fig, axes = setup_figure(5, ncols)
-
+  nrows = min(max(math.ceil(len(tickers) / ncols), 2), 4)
+  fig, axes = setup_figure(nrows, ncols)
+  
   plot_index = 0
   
   for ticker in tickers:
@@ -109,9 +116,15 @@ def run_sell_options_strategy():
       traceback.print_exc()
       continue
 
+  for ax in axes.flatten():
+    if not ax.has_data():
+      fig.delaxes(ax)
+
+  num_axes = len(fig.get_axes())
+    
   print('Rendering plot in Output tab...')
   plt.tight_layout()
-  fig.subplots_adjust(bottom=0.1)
+  fig.subplots_adjust()
   plt.show()
 
 

@@ -2,7 +2,7 @@ import os
 import math
 import pandas as pd
 from datetime import datetime, timedelta
-from constants import IS_VERBOSE, REFERENCE_CONFIDENCE
+from constants import IS_VERBOSE, REFERENCE_CONFIDENCE, USE_EARNINGS_CSV
 from vendors.yahoo import fetch_earnings_dates
 
 
@@ -68,13 +68,20 @@ def read_earnings_dates_from_csv(symbol):
 
 
 def fetch_past_earnings_dates(symbol):
-  earnings_dates = fetch_earnings_dates(symbol)
+  if USE_EARNINGS_CSV:
+    earnings_dates = read_earnings_dates_from_csv(symbol)
+  else:
+    earnings_dates = fetch_earnings_dates(symbol)
   return [x for x in pd.to_datetime(earnings_dates) if x < datetime.now()]
 
 
 def get_next_earnings_date(symbol):
-  earnings_dates = fetch_earnings_dates(symbol)
-  return [x for x in earnings_dates if x > datetime.now().date()][-1]
+  if USE_EARNINGS_CSV:
+    earnings_dates = read_earnings_dates_from_csv(symbol)
+  else:
+    earnings_dates = fetch_earnings_dates(symbol)
+  ret = [x for x in pd.to_datetime(earnings_dates) if x > (datetime.now() + timedelta(days=7))][-1]
+  return ret
 
 
 def count_trading_days(start_date, end_date):

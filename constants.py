@@ -1,9 +1,9 @@
 from collections import namedtuple
 
 
-SHOW_GRAPHS = False
+SHOW_GRAPHS = True
 IS_DEBUG = False
-IS_VERBOSE = False
+IS_VERBOSE = True
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
 USE_EARNINGS_CSV = False

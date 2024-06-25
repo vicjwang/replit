@@ -6,11 +6,9 @@ from utils import calc_annual_roi
 
 from constants import (
   DELTA_UPPER,
+  WORTHY_MIN_BID,
+  WORTHY_MIN_ROI,
 )
-
-
-WORTHY_MIN_BID = 0.7
-WORTHY_MIN_ROI = 0.2
 
 
 def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
@@ -54,6 +52,7 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
     raise ValueError(f'No eligible options found for {symbol}.')
 
   # Graph of ROI vs Expirations.
+  print(f'{symbol}: Graphing WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI}')
   ax.plot(expirations, rois)
   for x, y, strike, bid, delta in zip(expirations, rois, strikes, bids, deltas):
     label = f'K=\${strike}; \${bid} ({DELTA_UPPER}={round(delta, 2)})'

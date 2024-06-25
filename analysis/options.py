@@ -106,8 +106,8 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
   if SHOULD_AVOID_EARNINGS:
     assert len(this_df) < len(prices_df)
 
-  mean = this_df['change'].mean()
-  stdev = this_df['change'].std()
+  mean = round(this_df['change'].mean(), 4)
+  stdev = round(this_df['change'].std(), 4)
   year_ago_df = prices_df[(prices_df['date'] > year_ago)]
   high_52 = year_ago_df['close'].max()
   low_52 = year_ago_df['close'].min()
@@ -124,7 +124,7 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
     y = norm.pdf(x, mean, stdev)
     ax.plot(x, y, label='Normalized Gaussian')
 
-  printout(f'\n{symbol}: {MU}={mean} {SIGMA_LOWER}={stdev} high52=${high_52} low52=${low_52}\n')
+  printout(f'{symbol}: {MU}={mean} {SIGMA_LOWER}={stdev} high52=${high_52} low52=${low_52}')
   return mean, stdev, high_52, low_52
 
 
@@ -307,11 +307,13 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
   start_date = START_DATE
   # Calculate average price change and sigma of 1 day.
   prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
-  mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
 
   last_price = get_last_price(symbol)
   last_close = prices_df.iloc[-2]['close']
   last_change = (last_price - last_close) / last_close
+  printout(f'{symbol}: ${last_price}, {round(last_change * 100, 2)}%')
+
+  mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
 
   if option_type == 'call' and last_change > (0 * sigma):
     zscore = 1 #last_price * (1 + 20 * mu + sigma)

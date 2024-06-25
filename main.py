@@ -32,7 +32,8 @@ def get_tickers():
 
 
 TEST_SYMBOLS = dict(
-  SNAP=1,
+  DDOG=1,
+  DIS=1,
 )
 
 
@@ -111,7 +112,7 @@ def run_sell_options_strategy():
       plot_index += 1
 
     except Exception as e:
-      print(f'Skipping to graph {symbol}: {e}')
+      print(f'{symbol}: Skipping - {e}')
       if IS_DEBUG:
         traceback.print_exc()
       continue

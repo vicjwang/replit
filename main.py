@@ -24,9 +24,9 @@ def get_tickers():
   return defaultdict(
     bool,
     dict(
-      #**COVERED_CALLS,
-      #**CSEPs,
-      **TEST_SYMBOLS
+      **COVERED_CALLS,
+      **CSEPs,
+      #**TEST_SYMBOLS
     )
   )
 
@@ -92,6 +92,7 @@ def run_sell_options_strategy():
   plot_index = 0
   
   for ticker in tickers:
+    print()
     symbol = ticker.symbol
     row_index = plot_index // 2
     col_index = plot_index % 2

@@ -320,7 +320,7 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
   elif option_type == 'put' and last_change < (0 * sigma):
     zscore = -1 #last_price * (1 + -3 * sigma)
   else:
-    raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. {last_price} {last_change}')
+    raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${last_price}, {round(last_change * 100, 2)}%')
 
   next_earnings_date = get_next_earnings_date(symbol)
   _expirations = fetch_options_expirations(symbol)

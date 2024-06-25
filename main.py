@@ -15,7 +15,8 @@ from constants import (
   FIG_WIDTH,
   FIG_HEIGHT,
   TICKERS,
-  IS_DEBUG
+  IS_DEBUG,
+  SHOW_GRAPHS
 )
 
 
@@ -37,8 +38,6 @@ TEST_SYMBOLS = dict(
 
 # Global parameters.
 NCOLS = 2
-START_DATE = '2023-01-01'  # rate cut expectation
-#START_DATE = '2020-04-01' # COVID
 
 
 COVERED_CALLS = dict(
@@ -123,10 +122,11 @@ def run_sell_options_strategy():
 
   num_axes = len(fig.get_axes())
     
-  print('Rendering plot in Output tab...')
-  plt.tight_layout()
-  fig.subplots_adjust()
-  plt.show()
+  if SHOW_GRAPHS:
+    print('Rendering plot in Output tab...')
+    plt.tight_layout()
+    fig.subplots_adjust()
+    plt.show()
 
 
 if __name__ == '__main__':

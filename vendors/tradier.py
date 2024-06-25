@@ -1,11 +1,10 @@
 import os
-from pandas.core.common import not_none
 import requests
 import statistics
 import json
 
 from datetime import datetime
-from utils import printout
+from pandas.core.common import not_none
 
 
 TRADIER_API_KEY = os.environ['TRADIER_API_KEY']
@@ -44,8 +43,6 @@ def fetch_options_chain(symbol, expiry_date, option_type=None, ref_price=None, p
   params = {'symbol': symbol, 'expiration': expiry_date, 'greeks': 'true'}
   chain = make_api_request(endpoint, params)['options']['option']
 
-  printout(f'Found {len(chain)} options for {symbol} {expiry_date}')
-
   if ref_price:
     chain = [option for option in chain if abs(option['strike'] - ref_price) < plus_minus]
 
@@ -57,20 +54,39 @@ def fetch_options_chain(symbol, expiry_date, option_type=None, ref_price=None, p
   return chain
 
 
-def fetch_next_earnings_date(symbol):
+def fetch_earnings_dates(symbol, start_date:str=None):
   endpoint = 'https://api.tradier.com/beta/markets/fundamentals/calendars'
   params = {'symbols': symbol}
-  events = make_api_request(endpoint, params)[0]['results'][0]['tables']['corporate_calendars']
-  relevant_events = []
-  if not events:
-    return None
+  resp = make_api_request(endpoint, params)[0]['results']
 
+  # Response may have empty items so return first non-empty one.
+  events = None
+  for item in resp:
+    events = item['tables']['corporate_calendars']
+    if events:
+        break
+
+  if not events:
+    return []
+
+  # 7 = 1st quarter results, 8 = 2nd quarter, etc.
+  earnings_dates = set()
   for event in events:
-    if event['event_type'] != 14:
+    begin_dt = event['begin_date_time']
+    if start_date and begin_dt <= start_date:
       continue
-    
-    if event['begin_date_time'][:4] == str(datetime.now().year):
-       relevant_events.append(event)
+    #if event['event_type'] in {7,8,9,10}:
+    earnings_dates.add(begin_dt)
+
+  return list(reversed(sorted(earnings_dates)))
+
+
+def fetch_next_earnings_date(symbol):
+  events = fetch_earnings_dates(symbol)
+
+  today_datestr = datetime.now().strftime('%Y-%m-%d')
+
+  future_events = sorted([event for event in events if event['begin_date_time'] > today_datestr], key=lambda event: event['begin_date_time'])
 
   next_event = sorted(relevant_events, key=lambda x: x['begin_date_time'])[0]['begin_date_time']
   today_str = str(datetime.now().date())
@@ -82,3 +98,7 @@ def fetch_valuation_ratios(symbol):
   params = {'symbols': symbol}
   response = make_api_request(endpoint, params)
   return response
+
+
+if __name__ == '__main__':
+    print(fetch_earnings_dates('DDOG'))

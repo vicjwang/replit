@@ -74,7 +74,7 @@ def filter_historical_prices(symbol, prices):
 
 
 def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
-  earnings_dates = list(reversed(fetch_past_earnings_dates(symbol)))  # sorted in most recent first
+  earnings_dates = fetch_past_earnings_dates(symbol)  # sorted in most recent first
   
   if not earnings_dates and SHOULD_AVOID_EARNINGS:
     raise ValueError('No earnings dates found.')
@@ -92,9 +92,12 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
   if earnings_dates:
     # Loop through earnings and remove affected rows.
     this_df = pd.DataFrame()
-    for i, earnings_date in enumerate(earnings_dates[:-1]):
-      next_earnings_date = earnings_dates[i+1]
-      earnings_df = change_df[(earnings_date < change_df['date']) & (earnings_date < change_df['ref date']) & (change_df['date'] < next_earnings_date)]
+    for i, next_earnings_date in enumerate(earnings_dates[:-1]):
+      prev_earnings_date = earnings_dates[i+1]
+      prev_mask = (prev_earnings_date < change_df['date']) & (prev_earnings_date < change_df['ref date'])
+      next_mask = (change_df['date'] < next_earnings_date)
+      mask = prev_mask & next_mask
+      earnings_df = change_df[mask]
   
       this_df = pd.concat([this_df, earnings_df], ignore_index=True)
   else:
@@ -306,27 +309,24 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
   prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
   mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
 
-  
   last_price = get_last_price(symbol)
   last_close = prices_df.iloc[-2]['close']
   last_change = (last_price - last_close) / last_close
 
-  next_earnings_date = get_next_earnings_date(symbol)
+  if option_type == 'call' and last_change > (0 * sigma):
+    zscore = 1 #last_price * (1 + 20 * mu + sigma)
+  elif option_type == 'put' and last_change < (0 * sigma):
+    zscore = -1 #last_price * (1 + -3 * sigma)
+  else:
+    raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. {last_price} {last_change}')
 
+  next_earnings_date = get_next_earnings_date(symbol)
   _expirations = fetch_options_expirations(symbol)
   expirations = [x for x in _expirations if x < str(next_earnings_date)]
 
   chains = []
   for expiry in expirations:
     dte = calc_dte(expiry)
-    
-    if option_type == 'call' and last_change > 0 * sigma:
-      zscore = 1 #last_price * (1 + 20 * mu + sigma)
-    elif option_type == 'put' and last_change < 0 * sigma:
-      zscore = -1 #last_price * (1 + -3 * sigma)
-    else:
-      raise ValueError(f'Skipping - {symbol} move threshold not met.')
-
     chain = fetch_options_chain(symbol, expiry, option_type=option_type, ref_price=last_price, plus_minus=last_price * 0.2)
     
     for contract in chain:

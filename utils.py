@@ -2,8 +2,8 @@ import os
 import math
 import pandas as pd
 from datetime import datetime, timedelta
-from constants import IS_VERBOSE, REFERENCE_CONFIDENCE, USE_EARNINGS_CSV
-from vendors.yahoo import fetch_earnings_dates
+from constants import IS_VERBOSE, REFERENCE_CONFIDENCE, USE_EARNINGS_CSV, START_DATE
+from vendors.tradier import fetch_earnings_dates
 
 
 def calc_dte(expiry: str):
@@ -71,7 +71,7 @@ def fetch_past_earnings_dates(symbol):
   if USE_EARNINGS_CSV:
     earnings_dates = read_earnings_dates_from_csv(symbol)
   else:
-    earnings_dates = fetch_earnings_dates(symbol)
+    earnings_dates = fetch_earnings_dates(symbol, start_date=START_DATE)
   return [x for x in pd.to_datetime(earnings_dates) if x < datetime.now()]
 
 
@@ -79,8 +79,8 @@ def get_next_earnings_date(symbol):
   if USE_EARNINGS_CSV:
     earnings_dates = read_earnings_dates_from_csv(symbol)
   else:
-    earnings_dates = fetch_earnings_dates(symbol)
-  ret = [x for x in pd.to_datetime(earnings_dates) if x > (datetime.now() + timedelta(days=7))][-1]
+    earnings_dates = fetch_earnings_dates(symbol, start_date=START_DATE)
+  ret = [x for x in pd.to_datetime(earnings_dates) if x > datetime.now()][-1]
   return ret
 
 

@@ -1,11 +1,12 @@
 from collections import namedtuple
 
 
-IS_DEBUG = True
+SHOW_GRAPHS = False
+IS_DEBUG = False
 IS_VERBOSE = False
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
-USE_EARNINGS_CSV = True
+USE_EARNINGS_CSV = False
 
 WORTHY_MIN_BID = 0.7
 WORTHY_MIN_ROI = 0.2

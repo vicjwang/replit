@@ -314,11 +314,10 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
   next_earnings_date = get_next_earnings_date(symbol)
 
   _expirations = fetch_options_expirations(symbol)
-  expirations = [x for x in fetch_options_expirations(symbol) if x < str(next_earnings_date)]
+  expirations = [x for x in _expirations if x < str(next_earnings_date)]
 
   chains = []
   for expiry in expirations:
-    chain = fetch_options_chain(symbol, expiry, option_type=option_type, ref_price=last_price, plus_minus=last_price * 0.2)
     dte = calc_dte(expiry)
     
     if option_type == 'call' and last_change > 0 * sigma:
@@ -328,16 +327,19 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
     else:
       raise ValueError(f'Skipping - {symbol} move threshold not met.')
 
+    chain = fetch_options_chain(symbol, expiry, option_type=option_type, ref_price=last_price, plus_minus=last_price * 0.2)
+    
     for contract in chain:
       target_strike = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
       contract['target_strike'] = target_strike
-    
+
     chains.append(chain)
 
   params = dict(
     title = f'{symbol} {option_type}: Strikes @ Z-Score={zscore} ({REFERENCE_CONFIDENCE[zscore]} confidence)',
     text = '\n'.join((
      f'\${last_price}, {round(last_change * 100, 2)}%',
+     f'Next earnings: {next_earnings_date.date()}',
      f'{MU}={mu * 100:.2f}%',
      f'{SIGMA_LOWER}={sigma * 100:.2f}%',
     )),

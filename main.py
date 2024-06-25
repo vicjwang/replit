@@ -15,6 +15,7 @@ from constants import (
   FIG_WIDTH,
   FIG_HEIGHT,
   TICKERS,
+  IS_DEBUG
 )
 
 
@@ -22,16 +23,15 @@ def get_tickers():
   return defaultdict(
     bool,
     dict(
-      **COVERED_CALLS,
+      #**COVERED_CALLS,
       #**CSEPs,
-      #**TEST_SYMBOLS
+      **TEST_SYMBOLS
     )
   )
 
 
 TEST_SYMBOLS = dict(
   SNAP=1,
-  NVDA=1,
 )
 
 
@@ -113,7 +113,8 @@ def run_sell_options_strategy():
 
     except Exception as e:
       print(f'Skipping to graph {symbol}: {e}')
-      traceback.print_exc()
+      if IS_DEBUG:
+        traceback.print_exc()
       continue
 
   for ax in axes.flatten():

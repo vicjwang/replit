@@ -5,8 +5,12 @@ import pandas as pd
 from utils import calc_annual_roi
 
 from constants import (
-  DELTA_UPPER, WORTHY_MIN_BID, WORTHY_MIN_ROI
+  DELTA_UPPER,
 )
+
+
+WORTHY_MIN_BID = 0.7
+WORTHY_MIN_ROI = 0.2
 
 
 def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
@@ -34,7 +38,8 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
   cash_mask = (df['bid'] > WORTHY_MIN_BID) 
 
   mask = buffer_mask & roi_mask & cash_mask
-  
+
+  masked_df = df[mask]  
   rois = df[mask]['annual_roi']
   expirations = df[mask]['expiration_date']
   strikes = df[mask]['strike']

@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 
+IS_DEBUG = True
 IS_VERBOSE = False
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True

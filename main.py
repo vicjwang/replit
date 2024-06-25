@@ -24,9 +24,9 @@ def get_tickers():
   return defaultdict(
     bool,
     dict(
-      **COVERED_CALLS,
-      **CSEPs,
-      #**TEST_SYMBOLS
+      #**COVERED_CALLS,
+      #**CSEPs,
+      **TEST_SYMBOLS
     )
   )
 

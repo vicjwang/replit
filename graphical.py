@@ -43,7 +43,7 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
   strikes = df[mask]['strike']
   bids = df[mask]['bid']
   deltas = df[mask]['delta']
-  target_strikes = df[mask]['target_strike']
+  target_strikes = df[mask]['target_strike'].round(2)
 
   for e, t in sorted(set(zip(expirations, target_strikes))):
     print(f'{symbol}: {e} target={t:.2f}')
@@ -52,11 +52,17 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
     raise ValueError(f'No eligible options found for {symbol}.')
 
   # Graph of ROI vs Expirations.
-  print(f'{symbol}: Graphing WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI}')
+  print(f'{symbol}: Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})')
   ax.plot(expirations, rois)
   for x, y, strike, bid, delta in zip(expirations, rois, strikes, bids, deltas):
     label = f'K=\${strike}; \${bid} ({DELTA_UPPER}={round(delta, 2)})'
     ax.text(x, y, label, fontsize=8)#, ha='right', va='bottom')
+
+  # Custom xticks.
+  xticks = expirations
+  xticklabels = [f'{e} (t=${t})' for e,t in zip(expirations, target_strikes)]
+  ax.set_xticks(xticks)
+  ax.set_xticklabels(xticklabels)
 
   if params:
     if 'title' in params:

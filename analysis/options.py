@@ -39,6 +39,8 @@ from constants import (
   WORTHY_MIN_ROI,
   MU,
   SIGMA_LOWER,
+  CI_ZSCORE,
+  MY_CI,
 )
 
 from graphical import render_roi_vs_expiry
@@ -316,9 +318,9 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
   mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
 
   if option_type == 'call' and last_change > (0 * sigma):
-    zscore = 1 #last_price * (1 + 20 * mu + sigma)
+    zscore = CI_ZSCORE[MY_CI]
   elif option_type == 'put' and last_change < (0 * sigma):
-    zscore = -1 #last_price * (1 + -3 * sigma)
+    zscore = -1*CI_ZSCORE[MY_CI]
   else:
     raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${last_price}, {round(last_change * 100, 2)}%')
 
@@ -343,7 +345,7 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
     chains.append(chain)
 
   params = dict(
-    title = f'{symbol} {option_type.title()}s: Strikes @ Z-Score={zscore} ({REFERENCE_CONFIDENCE[zscore]} confidence)',
+    title = f'{symbol} {option_type.title()}s: Strikes @ Z-Score={zscore} ({(1-REFERENCE_CONFIDENCE[zscore])*100}% confidence)',
     text = '\n'.join((
      f'\${last_price}, {round(last_change * 100, 2)}%',
      f'Next earnings: {next_earnings_date.date()}',

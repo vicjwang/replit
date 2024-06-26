@@ -1,8 +1,9 @@
 from collections import namedtuple
 
 
+MY_CI = 84
 SHOW_GRAPHS = True
-IS_DEBUG = False
+IS_DEBUG = True
 IS_VERBOSE = True
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
@@ -11,10 +12,20 @@ USE_EARNINGS_CSV = False
 WORTHY_MIN_BID = 0.5
 WORTHY_MIN_ROI = 0.2
 
+CI_ZSCORE = {
+  # Includes entire left tail.
+  84: 1,
+  90: 1.28,
+  95: 1.645,
+  99: 2.33,
+}
+
 REFERENCE_CONFIDENCE = {
   0: 0.5,
   1: 0.158,
+  1.28: 0.90,
   -1: 0.158,
+  -1.28: 0.90,
   -3: .99,
 }
 NOTABLE_DELTA_MAX = .2

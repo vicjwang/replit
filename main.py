@@ -32,8 +32,8 @@ def get_tickers():
 
 
 TEST_SYMBOLS = dict(
+  MDB=1,
   DDOG=1,
-  DIS=1,
 )
 
 

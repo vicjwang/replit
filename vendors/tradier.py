@@ -75,10 +75,12 @@ def fetch_earnings_dates(symbol, start_date:str=None):
     begin_dt = event['begin_date_time']
     if start_date and begin_dt <= start_date:
       continue
-    #if event['event_type'] in {7,8,9,10}:
-    earnings_dates.add(begin_dt)
 
-  return list(reversed(sorted(earnings_dates)))
+    if event['event_type'] in {7,8,9,10}:
+      earnings_dates.add(begin_dt)
+
+  ret = list(reversed(sorted(earnings_dates)))
+  return ret
 
 
 def fetch_next_earnings_date(symbol):

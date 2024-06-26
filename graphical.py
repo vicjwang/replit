@@ -46,7 +46,7 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
   target_strikes = df[mask]['target_strike'].round(2)
 
   for e, t in sorted(set(zip(expirations, target_strikes))):
-    print(f'{symbol}: {e} target={t:.2f}')
+    print(f'{symbol}: {e} target=${t:.2f}')
 
   if len(expirations) == 0:
     raise ValueError(f'No eligible options found for {symbol}.')

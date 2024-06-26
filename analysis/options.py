@@ -323,8 +323,13 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
     raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${last_price}, {round(last_change * 100, 2)}%')
 
   next_earnings_date = get_next_earnings_date(symbol)
+  printout(f"{symbol}: Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
+
   _expirations = fetch_options_expirations(symbol)
   expirations = [x for x in _expirations if x < str(next_earnings_date)]
+
+  if len(expirations) == 0:
+    raise ValueError(f'Skipping - no appropriate expiries found.')
 
   chains = []
   for expiry in expirations:
@@ -338,7 +343,7 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
     chains.append(chain)
 
   params = dict(
-    title = f'{symbol} {option_type}: Strikes @ Z-Score={zscore} ({REFERENCE_CONFIDENCE[zscore]} confidence)',
+    title = f'{symbol} {option_type.title()}s: Strikes @ Z-Score={zscore} ({REFERENCE_CONFIDENCE[zscore]} confidence)',
     text = '\n'.join((
      f'\${last_price}, {round(last_change * 100, 2)}%',
      f'Next earnings: {next_earnings_date.date()}',

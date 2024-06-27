@@ -33,7 +33,7 @@ NOTABLE_DELTA_MAX = .2
 
 FIG_WIDTH = 5 if IS_PHONE else 13.5
 FIG_HEIGHT = 6 if IS_PHONE else 7.5
-
+NCOLS = 1 if IS_PHONE else 2
 
 # Using Unicode escape sequences
 DELTA_UPPER = '\u0394'

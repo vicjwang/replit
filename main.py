@@ -16,7 +16,8 @@ from constants import (
   FIG_HEIGHT,
   TICKERS,
   IS_DEBUG,
-  SHOW_GRAPHS
+  SHOW_GRAPHS,
+  NCOLS,
 )
 
 
@@ -36,10 +37,6 @@ TEST_SYMBOLS = dict(
   DDOG=1,
   OKTA=1,
 )
-
-
-# Global parameters.
-NCOLS = 1
 
 
 COVERED_CALLS = dict(

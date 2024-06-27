@@ -15,6 +15,9 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
   if not ax:
     raise ValueError('No ax to graph on.')
 
+  if not chains:
+    raise ValueError('No option chains to graph.')
+
   # Store all chains in DataFrame.
   df = pd.DataFrame()
   for chain in chains:
@@ -30,12 +33,13 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
   buffer_mask = (abs(df['strike'] - df['target_strike']) < buffer)
 
   # ROI needs to be worth it plus ROI becomes linear when too itm so remove.
-  roi_mask = (df['annual_roi'] > WORTHY_MIN_ROI) & (df['annual_roi'] < 1)
+  roi_mask = (df['annual_roi'] > WORTHY_MIN_ROI)
+  otm_only_mask = (df['annual_roi'] < 1)
 
   # Cash needs to be worth it per contract.
   cash_mask = (df['bid'] > WORTHY_MIN_BID) 
 
-  mask = buffer_mask & roi_mask & cash_mask
+  mask = cash_mask & buffer_mask & otm_only_mask & roi_mask
 
   masked_df = df[mask]  
   rois = df[mask]['annual_roi']
@@ -49,7 +53,7 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
     print(f'{symbol}: {e} target=${t:.2f}')
 
   if len(expirations) == 0:
-    raise ValueError(f'No eligible options found for {symbol}.')
+    raise ValueError(f'No eligible options for graph found for {symbol}.')
 
   # Graph of ROI vs Expirations.
   print(f'{symbol}: Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})')
@@ -60,9 +64,9 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
 
   # Custom xticks.
   xticks = expirations
-  xticklabels = [f'{e} (t=${t})' for e,t in zip(expirations, target_strikes)]
+  xticklabels = [f'{e}\n(t=${t})' for e,t in zip(expirations, target_strikes)]
   ax.set_xticks(xticks)
-  ax.set_xticklabels(xticklabels)
+  ax.set_xticklabels(xticklabels, rotation=30)
 
   if params:
     if 'title' in params:

@@ -21,7 +21,7 @@ def calc_annual_roi(contract) -> float:
   days_to_expiry = (expiry_date - datetime.now().date()).days
   
   roi = bid / strike
-  annual_roi = roi / days_to_expiry * 365 if days_to_expiry > 0 else roi * 365
+  annual_roi = roi * 365 / days_to_expiry if days_to_expiry > 0 else roi * 365
   return annual_roi
 
 

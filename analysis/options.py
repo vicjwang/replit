@@ -39,8 +39,9 @@ from constants import (
   WORTHY_MIN_ROI,
   MU,
   SIGMA_LOWER,
-  CI_ZSCORE,
-  MY_CI,
+  PHI_ZSCORE,
+  MY_PHI,
+  MIN_EXPIRY_DATESTR,
 )
 
 from graphical import render_roi_vs_expiry
@@ -79,7 +80,7 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
   earnings_dates = fetch_past_earnings_dates(symbol)  # sorted in most recent first
   
   if not earnings_dates and SHOULD_AVOID_EARNINGS:
-    raise ValueError('No earnings dates found.')
+    raise ValueError(f'No earnings dates provided when SHOULD_AVOID_EARNINGS={SHOULD_AVOID_EARNINGS}.')
 
   high_52 = 0
   low_52 = 1_000_000_000
@@ -91,7 +92,7 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
     'ref date': pd.to_datetime(prices_df['date'].shift(periods))
   })
   
-  if earnings_dates:
+  if earnings_dates and SHOULD_AVOID_EARNINGS:
     # Loop through earnings and remove affected rows.
     this_df = pd.DataFrame()
     for i, next_earnings_date in enumerate(earnings_dates[:-1]):
@@ -107,6 +108,8 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
 
   if SHOULD_AVOID_EARNINGS:
     assert len(this_df) < len(prices_df)
+  else:
+    assert len(this_df) == len(prices_df)
 
   mean = round(this_df['change'].mean(), 4)
   stdev = round(this_df['change'].std(), 4)
@@ -318,17 +321,20 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
   mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
 
   if option_type == 'call' and last_change > (0 * sigma):
-    zscore = CI_ZSCORE[MY_CI]
+    zscore = PHI_ZSCORE[MY_PHI]
   elif option_type == 'put' and last_change < (0 * sigma):
-    zscore = -1*CI_ZSCORE[MY_CI]
+    zscore = -1*PHI_ZSCORE[MY_PHI]
   else:
     raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${last_price}, {round(last_change * 100, 2)}%')
 
   next_earnings_date = get_next_earnings_date(symbol)
   printout(f"{symbol}: Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
 
-  _expirations = fetch_options_expirations(symbol)
-  expirations = [x for x in _expirations if x < str(next_earnings_date)]
+  expirations = fetch_options_expirations(symbol)
+  if SHOULD_AVOID_EARNINGS:
+    expirations = [x for x in expirations if x < str(next_earnings_date)]
+  else:
+    expirations = [x for x in expirations if x > MIN_EXPIRY_DATESTR]
 
   if len(expirations) == 0:
     raise ValueError(f'Skipping - no appropriate expiries found.')
@@ -336,10 +342,13 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
   chains = []
   for expiry in expirations:
     dte = calc_dte(expiry)
-    chain = fetch_options_chain(symbol, expiry, option_type=option_type, ref_price=last_price, plus_minus=last_price * 0.2)
+    target_strike = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
+
+    chain = fetch_options_chain(symbol, expiry, option_type=option_type, ref_price=target_strike, plus_minus=target_strike * 0.2)
+    if not chain:
+      continue
     
     for contract in chain:
-      target_strike = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
       contract['target_strike'] = target_strike
 
     chains.append(chain)

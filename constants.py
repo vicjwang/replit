@@ -1,20 +1,22 @@
 from collections import namedtuple
 
 
-IS_PHONE = True
-MY_CI = 84
+IS_PHONE = False
+MY_PHI = 84  # in percent
 SHOW_GRAPHS = True
 IS_DEBUG = False
 IS_VERBOSE = True
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
+MIN_EXPIRY_DATESTR = '2025-06-01'
 USE_EARNINGS_CSV = False
 
 WORTHY_MIN_BID = 0.5
 WORTHY_MIN_ROI = 0.2
 
-CI_ZSCORE = {
+PHI_ZSCORE = {
   # Includes entire left tail.
+  50: 0,
   84: 1,
   90: 1.28,
   95: 1.645,

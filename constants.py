@@ -1,9 +1,10 @@
 from collections import namedtuple
 
 
+IS_PHONE = True
 MY_CI = 84
 SHOW_GRAPHS = True
-IS_DEBUG = True
+IS_DEBUG = False
 IS_VERBOSE = True
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
@@ -30,8 +31,8 @@ REFERENCE_CONFIDENCE = {
 }
 NOTABLE_DELTA_MAX = .2
 
-FIG_WIDTH = 13.5
-FIG_HEIGHT = 7.5
+FIG_WIDTH = 5 if IS_PHONE else 13.5
+FIG_HEIGHT = 6 if IS_PHONE else 7.5
 
 
 # Using Unicode escape sequences

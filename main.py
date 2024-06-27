@@ -34,11 +34,12 @@ def get_tickers():
 TEST_SYMBOLS = dict(
   MDB=1,
   DDOG=1,
+  OKTA=1,
 )
 
 
 # Global parameters.
-NCOLS = 2
+NCOLS = 1
 
 
 COVERED_CALLS = dict(

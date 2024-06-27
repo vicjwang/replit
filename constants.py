@@ -2,7 +2,7 @@ from collections import namedtuple
 
 
 IS_PHONE = False
-MY_PHI = 84  # in percent
+MY_PHI = 50  # in percent
 SHOW_GRAPHS = True
 IS_DEBUG = False
 IS_VERBOSE = True

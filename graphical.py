@@ -39,7 +39,7 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
   # Cash needs to be worth it per contract.
   cash_mask = (df['bid'] > WORTHY_MIN_BID) 
 
-  mask = cash_mask & buffer_mask & otm_only_mask & roi_mask
+  mask = cash_mask & buffer_mask & roi_mask & otm_only_mask
 
   masked_df = df[mask]  
   rois = df[mask]['annual_roi']

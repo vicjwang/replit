@@ -308,7 +308,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   return worthy_contracts
 
 
-def show_worthy_contracts(symbol: str, option_type: str, ax):
+def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
   start_date = START_DATE
   # Calculate average price change and sigma of 1 day.
   prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
@@ -344,7 +344,7 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
     dte = calc_dte(expiry)
     target_strike = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
 
-    chain = fetch_options_chain(symbol, expiry, option_type=option_type, ref_price=target_strike, plus_minus=target_strike * 0.2)
+    chain = fetch_options_chain(symbol, expiry, option_type=option_type, target_price=target_strike, plus_minus=target_strike * 0.2)
     if not chain:
       continue
     
@@ -364,4 +364,51 @@ def show_worthy_contracts(symbol: str, option_type: str, ax):
     ylabel= 'Annual ROI',
   )
   render_roi_vs_expiry(symbol, chains, last_price, ax=ax, params=params)
+ 
+
+def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
   
+  start_date = START_DATE
+  # Calculate average price change and sigma of 1 day.
+  prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
+
+  last_price = get_last_price(symbol)
+  last_close = prices_df.iloc[-2]['close']
+  last_change = (last_price - last_close) / last_close
+  printout(f'{symbol}: ${last_price}, {round(last_change * 100, 2)}%')
+
+  mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
+
+  expirations = fetch_options_expirations(symbol)
+  expirations = [x for x in expirations if x > MIN_EXPIRY_DATESTR]
+  if len(expirations) == 0:
+    raise ValueError(f'Skipping - no appropriate expiries found.')
+
+  zscore = PHI_ZSCORE[MY_PHI]
+
+  chains = []
+  for expiry in expirations:
+    dte = calc_dte(expiry)
+    target_strike = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
+
+    chain = fetch_options_chain(symbol, expiry, option_type=option_type, target_price=target_strike, plus_minus=target_strike * 0.2)
+    if not chain:
+      continue
+    
+    for contract in chain:
+      contract['target_strike'] = target_strike
+
+    chains.append(chain)
+
+  params = dict(
+    title = f'{symbol} {option_type.title()}s: Strikes @ Z-Score={zscore} ({(1-REFERENCE_CONFIDENCE[zscore])*100}% confidence)',
+    text = '\n'.join((
+     f'\${last_price}, {round(last_change * 100, 2)}%',
+     f'{MU}={mu * 100:.2f}%',
+     f'{SIGMA_LOWER}={sigma * 100:.2f}%',
+    )),
+    ylabel= 'Annual ROI',
+  )
+  render_roi_vs_expiry(symbol, chains, last_price, ax=ax, params=params)
+ 
+

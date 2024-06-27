@@ -38,17 +38,18 @@ def fetch_options_expirations(symbol):
   return make_api_request(endpoint, params)['expirations']['date']
 
 
-def fetch_options_chain(symbol, expiry_date, option_type=None, ref_price=None, plus_minus=0):
+def fetch_options_chain(symbol, expiry_date, option_type=None, target_price=None, plus_minus=0):
   endpoint = 'https://api.tradier.com/v1/markets/options/chains'
   params = {'symbol': symbol, 'expiration': expiry_date, 'greeks': 'true'}
   chain = make_api_request(endpoint, params)['options']['option']
 
   max_chain_strike = chain[-1]['strike']
-  if max_chain_strike < (ref_price - plus_minus):
-    raise ValueError(f'Max strike out of range for {expiry_date}: {max_chain_strike}')
+  if max_chain_strike < (target_price - plus_minus):
+    print(f'Warning: Max strike {max_chain_strike} out of range for {expiry_date} target: {target_price}')
+    return []
 
-  if ref_price:
-    chain = [option for option in chain if abs(option['strike'] - ref_price) < plus_minus]
+  if target_price:
+    chain = [option for option in chain if abs(option['strike'] - target_price) < plus_minus]
 
   if option_type:
     chain = [option for option in chain if option['option_type'] == option_type]

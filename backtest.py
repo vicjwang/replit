@@ -1,4 +1,7 @@
 import pandas as pd
+import yfinance as yf
+import os
+import pickle
 
 from utils import fetch_past_earnings_dates, calc_expected_strike
 
@@ -29,3 +32,48 @@ def calc_historical_itm_proba(symbol, prices, mu, sigma, trading_days, zscore, c
   proba = len(df[df['is_itm'] == True])/len(df['expected_price'].dropna())
 
   return proba
+
+
+
+def cached():
+    """
+    A function that creates a decorator which will use "cachefile" for caching the results of the decorated function "fn".
+    """
+    def decorator(fn):  # define a decorator for a function "fn"
+        def wrapped(*args, **kwargs):   # define a wrapper that will finally call "fn" with all arguments            
+            # if cache exists -> load it and return its content
+            if len(args) == 1:
+              arglist = [args[0]]
+            else:
+              arglist = list(*args)
+            cachefile = f'{fn.__name__}-{"_".join([arg for arg in arglist])}.pkl'
+            if os.path.exists(cachefile):
+                    with open(cachefile, 'rb') as cachehandle:
+                        print("using cached result from '%s'" % cachefile)
+                        return pickle.load(cachehandle)
+
+            # execute the function with all arguments passed
+            res = fn(*args, **kwargs)
+
+            # write to cache file
+            with open(cachefile, 'wb') as cachehandle:
+                print("saving result to cache '%s'" % cachefile)
+                pickle.dump(res, cachehandle)
+
+            return res
+
+        return wrapped
+
+    return decorator
+
+
+@cached()
+def fetch_prices(symbol):
+  df = yf.download(symbol, start='2010-01-01')
+  return df
+
+
+if __name__ == '__main__':
+  prices = fetch_prices('AAPL')
+  print(prices.head())
+  

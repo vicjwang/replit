@@ -1,9 +1,45 @@
 import os
 import math
 import pandas as pd
+import pickle
+
 from datetime import datetime, timedelta
-from constants import IS_VERBOSE, REFERENCE_CONFIDENCE, USE_EARNINGS_CSV, START_DATE
-from vendors.tradier import fetch_earnings_dates
+from constants import (
+  IS_VERBOSE, REFERENCE_CONFIDENCE, USE_EARNINGS_CSV, START_DATE,
+  CACHE_DIR
+)
+
+
+def cached(force_refresh=False):
+  """
+  A function that creates a decorator which will use "cache_filepath" for caching the results of the decorated function "fn".
+  """
+  def decorator(fn):  # define a decorator for a function "fn"
+
+    def wrapped(*args, **kwargs):   # define a wrapper that will finally call "fn" with all arguments
+
+      # if cache exists -> load it and return its content
+      today_date = datetime.now().strftime('%Y%m%d')
+      cache_filename = f'{today_date}-{fn.__name__}-{"_".join([arg for arg in args])}.pkl'
+      cache_filepath = os.path.join(CACHE_DIR, cache_filename)
+      if os.path.exists(cache_filepath) and not force_refresh:
+        with open(cache_filepath, 'rb') as cachehandle:
+          print("using cached result from '%s'" % cache_filepath)
+          return pickle.load(cachehandle)
+
+      # execute the function with all arguments passed
+      res = fn(*args, **kwargs)
+
+      # write to cache file
+      with open(cache_filepath, 'wb') as cachehandle:
+        print("saving result to cache '%s'" % cache_filepath)
+        pickle.dump(res, cachehandle)
+
+      return res
+
+    return wrapped
+
+  return decorator
 
 
 def calc_dte(expiry: str):
@@ -65,23 +101,6 @@ def read_earnings_dates_from_csv(symbol):
   with open(filepath, 'r') as f:
     dates = f.read().splitlines()
     return dates
-
-
-def fetch_past_earnings_dates(symbol):
-  if USE_EARNINGS_CSV:
-    earnings_dates = read_earnings_dates_from_csv(symbol)
-  else:
-    earnings_dates = fetch_earnings_dates(symbol, start_date=START_DATE)
-  return [x for x in pd.to_datetime(earnings_dates) if x < datetime.now()]
-
-
-def get_next_earnings_date(symbol):
-  if USE_EARNINGS_CSV:
-    earnings_dates = read_earnings_dates_from_csv(symbol)
-  else:
-    earnings_dates = fetch_earnings_dates(symbol, start_date=START_DATE)
-  ret = [x for x in pd.to_datetime(earnings_dates) if x > datetime.now()][-1]
-  return ret
 
 
 def count_trading_days(start_date, end_date):

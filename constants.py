@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 
+IS_WIDESCREEN = False
 IS_PHONE = False
 MY_PHI = 50  # in percent
 SHOW_GRAPHS = True
@@ -8,7 +9,7 @@ IS_DEBUG = False
 IS_VERBOSE = True
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
-MIN_EXPIRY_DATESTR = '2025-06-01'
+MIN_EXPIRY_DATESTR = '2025-01-01'
 USE_EARNINGS_CSV = False
 
 WORTHY_MIN_BID = 0.5
@@ -33,8 +34,8 @@ REFERENCE_CONFIDENCE = {
 }
 NOTABLE_DELTA_MAX = .2
 
-FIG_WIDTH = 5 if IS_PHONE else 13.5
-FIG_HEIGHT = 6 if IS_PHONE else 7.5
+FIG_WIDTH = 5 if IS_PHONE else 26 if IS_WIDESCREEN else 13.5
+FIG_HEIGHT = 6 if IS_PHONE else 10 if IS_WIDESCREEN else 7.5
 NCOLS = 1 if IS_PHONE else 2
 
 # Using Unicode escape sequences
@@ -75,3 +76,6 @@ TICKERS = [
   Ticker(symbol='TXN', name='Texas Instruments', next_earnings='2024-07-23'),
   #Ticker(symbol='GME', name='Gamestop'),
 ]
+
+
+CACHE_DIR = './cache'

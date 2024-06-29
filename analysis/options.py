@@ -15,10 +15,9 @@ from datetime import datetime, date, timedelta
 from scipy.stats import norm
 
 from utils import (
-  fetch_past_earnings_dates, printout,
+  printout,
   count_trading_days,
   calc_expected_strike,
-  get_next_earnings_date,
   calc_dte,
 )
 
@@ -29,6 +28,8 @@ from vendors.tradier import (
   fetch_options_expirations,
   fetch_options_chain,
   fetch_next_earnings_date,
+  get_next_earnings_date,
+  fetch_past_earnings_dates,
 )
 
 from constants import (

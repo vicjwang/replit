@@ -1,10 +1,13 @@
+import numpy as np
 import os
 import pickle
 import pandas as pd
-import numpy as np
-
-from utils import fetch_past_earnings_dates, calc_expected_strike
 import vectorbt as vbt
+
+from utils import (
+  calc_expected_strike, cached
+)
+from vendors.tradier import fetch_past_earnings_dates
 
 
 def calc_historical_itm_proba(symbol, prices, mu, sigma, trading_days, zscore, contract_type='c'):
@@ -34,34 +37,6 @@ def calc_historical_itm_proba(symbol, prices, mu, sigma, trading_days, zscore, c
 
   return proba
 
-
-def cached():
-    """
-    A function that creates a decorator which will use "cachefile" for caching the results of the decorated function "fn".
-    """
-    def decorator(fn):  # define a decorator for a function "fn"
-        def wrapped(*args, **kwargs):   # define a wrapper that will finally call "fn" with all arguments            
-            # if cache exists -> load it and return its content
-            arglist = list(*args)
-            cachefile = f'{fn.__name__}-{"_".join([arg for arg in arglist])}.pkl'
-            if os.path.exists(cachefile):
-                    with open(cachefile, 'rb') as cachehandle:
-                        print("using cached result from '%s'" % cachefile)
-                        return pickle.load(cachehandle)
-
-            # execute the function with all arguments passed
-            res = fn(*args, **kwargs)
-
-            # write to cache file
-            with open(cachefile, 'wb') as cachehandle:
-                print("saving result to cache '%s'" % cachefile)
-                pickle.dump(res, cachehandle)
-
-            return res
-
-        return wrapped
-
-    return decorator
 
 
 @cached()
@@ -110,4 +85,5 @@ def buy_mag7_strategy():
 
 
 if __name__ == '__main__':
-  buy_mag7_strategy()
+#  buy_mag7_strategy()
+  fetch_prices('NVDA') 

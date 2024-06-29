@@ -1,0 +1,44 @@
+import os
+import pickle
+import subprocess
+
+from constants import CACHE_DIR
+from datetime import datetime
+from utils import printout
+
+
+def cached(force_refresh=False):
+  """
+  A function that creates a decorator which will use "cache_filepath" for caching the results of the decorated function "fn".
+  """
+  def decorator(fn):  # define a decorator for a function "fn"
+
+    def wrapped(*args, **kwargs):   # define a wrapper that will finally call "fn" with all arguments
+
+      # Create cache folder if not exist.
+      today_datestr = datetime.now().strftime('%Y%m%d')
+      cache_dir = os.path.join(CACHE_DIR, today_datestr)
+      if not os.path.exists(cache_dir):
+        subprocess.run(['mkdir', cache_dir])
+
+      # if cache exists -> load it and return its content
+      cache_filename = f'{fn.__name__}-{"_".join([arg for arg in args])}.pkl'
+      cache_filepath = os.path.join(cache_dir, cache_filename)
+      if os.path.exists(cache_filepath) and not force_refresh:
+        with open(cache_filepath, 'rb') as cachehandle:
+          printout("Using cached result from '%s'" % cache_filepath)
+          return pickle.load(cachehandle)
+
+      # execute the function with all arguments passed
+      res = fn(*args, **kwargs)
+
+      # write to cache file
+      with open(cache_filepath, 'wb') as cachehandle:
+        printout("Saving result to cache '%s'" % cache_filepath)
+        pickle.dump(res, cachehandle)
+
+      return res
+
+    return wrapped
+
+  return decorator

@@ -1,12 +1,12 @@
 from collections import namedtuple
 
 
-IS_WIDESCREEN = False
+IS_WIDESCREEN = True
 IS_PHONE = False
-MY_PHI = 50  # in percent
+MY_PHI = 84  # in percent
 SHOW_GRAPHS = True
 IS_DEBUG = False
-IS_VERBOSE = True
+IS_VERBOSE = False
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
 MIN_EXPIRY_DATESTR = '2025-01-01'
@@ -17,6 +17,10 @@ WORTHY_MIN_ROI = 0.2
 
 PHI_ZSCORE = {
   # Includes entire left tail.
+  1: -2.33,
+  5: -1.645,
+  10: -1.28,
+  16: -1,
   50: 0,
   84: 1,
   90: 1.28,
@@ -24,14 +28,12 @@ PHI_ZSCORE = {
   99: 2.33,
 }
 
-REFERENCE_CONFIDENCE = {
-  0: 0.5,
-  1: 0.158,
-  1.28: 0.90,
-  -1: 0.158,
-  -1.28: 0.90,
-  -3: .99,
-}
+# For selling options only.
+ZSCORE_PHI = dict(
+  put={-1*z: 100-p for p, z in PHI_ZSCORE.items()},
+  call={z: 100-p for p, z in PHI_ZSCORE.items()},
+)
+
 NOTABLE_DELTA_MAX = .2
 
 FIG_WIDTH = 5 if IS_PHONE else 26 if IS_WIDESCREEN else 13.5
@@ -79,3 +81,5 @@ TICKERS = [
 
 
 CACHE_DIR = './cache'
+
+assert MY_PHI in PHI_ZSCORE.keys(), f"Invalid MY_PHI={MY_PHI}"

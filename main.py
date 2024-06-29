@@ -10,7 +10,11 @@ import yfinance as yf
 from collections import defaultdict
 from datetime import datetime
 
-from analysis.options import find_worthy_short_term_contracts, find_worthy_long_term_contracts
+from analysis.options import (
+  find_worthy_short_term_contracts, 
+  find_worthy_long_term_contracts,
+  find_worthy_contracts,
+)
 from constants import (
   FIG_WIDTH,
   FIG_HEIGHT,
@@ -152,12 +156,33 @@ def sell_LTDOTM_calls_strategy(symbol, ax):
   find_worthy_long_term_contracts(symbol, 'call', ax)
 
 
+def sell_puts_strategy(symbol):
+
+  ncols = NCOLS
+  nrows = 2
+  fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
+  
+  find_worthy_contracts(symbol, 'put', axes)
+
+  for ax in axes.flatten():
+    if not ax.has_data():
+      fig.delaxes(ax)
+
+  num_axes = len(fig.get_axes())
+    
+  if SHOW_GRAPHS:
+    print('Rendering plot in Output tab...')
+    plt.tight_layout()
+    fig.subplots_adjust()
+    plt.show()
+
+
 if __name__ == '__main__':
+  sell_puts_strategy('NVDA')
+
 #  run(sell_short_term_options_strategy)
-  run(sell_LTDITM_puts_strategy)
+  #run(sell_LTDITM_puts_strategy)
 
   # NOTE: YoY ROI generally not worth it (<.05)
 #  run(sell_LTDOTM_calls_strategy)
-  
-
 

@@ -23,7 +23,7 @@ from utils import (
 
 from vendors.tradier import (
   make_api_request,
-  get_last_price,
+  fetch_last_price,
   fetch_historical_prices,
   fetch_options_expirations,
   fetch_options_chain,
@@ -34,7 +34,6 @@ from vendors.tradier import (
 
 from constants import (
   SHOULD_AVOID_EARNINGS,
-  REFERENCE_CONFIDENCE,
   START_DATE,
   NOTABLE_DELTA_MAX,
   WORTHY_MIN_ROI,
@@ -43,6 +42,7 @@ from constants import (
   PHI_ZSCORE,
   MY_PHI,
   MIN_EXPIRY_DATESTR,
+  ZSCORE_PHI,
 )
 
 from graphical import render_roi_vs_expiry
@@ -130,7 +130,7 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
     y = norm.pdf(x, mean, stdev)
     ax.plot(x, y, label='Normalized Gaussian')
 
-  printout(f'{symbol}: {MU}={mean} {SIGMA_LOWER}={stdev} high52=${high_52} low52=${low_52}')
+  print(f'{symbol}: {MU}={mean} {SIGMA_LOWER}={stdev} high52=${high_52} low52=${low_52}')
   return mean, stdev, high_52, low_52
 
 
@@ -211,7 +211,7 @@ def should_sell_cc(contract, exp_strike, zscore):
   delta = contract['greeks']['delta']
   roi = contract['annual_roi']
 
-  confidence = REFERENCE_CONFIDENCE[zscore]
+  confidence = ZSCORE_PHI['call'][zscore]
 
   is_market_overest = (strike - exp_strike)/exp_strike > -0.02 and delta > confidence
   is_delta_notable = confidence <= delta <= NOTABLE_DELTA_MAX
@@ -229,7 +229,7 @@ def should_sell_csep(contract, exp_strike, zscore):
   strike = contract['strike']
   delta = contract['greeks']['delta']
 
-  should_sell = (strike - exp_strike)/exp_strike > -0.02 and delta > REFERENCE_CONFIDENCE[zscore]
+  should_sell = (strike - exp_strike)/exp_strike > -0.02 and delta > ZSCORE_PHI['put'][zscore]
   printout(f' Sell csep? {should_sell}')
   return should_sell
 
@@ -260,7 +260,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
 
     historical_itm_proba = backtest.calc_historical_itm_proba(symbol, prices_df, mu, sigma, days_to_best_expiry, zscore)
 
-    printout(f'My expected *{zscore}* sigma move price: \033[32m{round(cc_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE[zscore]*100}% confidence)')
+    printout(f'My expected *{zscore}* sigma move price: \033[32m{round(cc_exp_strike, 2)}\033[0m (aka {ZSCORE_PHI[zscore]*100}% confidence)')
     printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
     printout(f'Historical delta for {zscore} sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
 
@@ -290,7 +290,7 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
     zscore = -3
     csep_exp_strike = last_close * (1 + zscore*sigma)
 
-    printout(f'My expected *{zscore}* sigma move price: \033[32m{round(csep_exp_strike, 2)}\033[0m (aka {REFERENCE_CONFIDENCE[zscore]*100}% confidence)')
+    printout(f'My expected *{zscore}* sigma move price: \033[32m{round(csep_exp_strike, 2)}\033[0m (aka {ZSCORE_PHI[zscore]*100}% confidence)')
     printout(f' mu={round(mu*100, 4)}%, sigma={round(sigma * 100, 4)}%, n={days_to_best_expiry}\n')
   #  printout(f'Historical delta for -1 sigma move in {days_to_best_expiry} days = \033[36m{round(historical_itm_proba, 2)}\033[0m (want this to be smaller than actual delta of target contract)\n')
 
@@ -314,10 +314,10 @@ def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
   # Calculate average price change and sigma of 1 day.
   prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
 
-  last_price = get_last_price(symbol)
+  last_price = fetch_last_price(symbol)
   last_close = prices_df.iloc[-2]['close']
   last_change = (last_price - last_close) / last_close
-  printout(f'{symbol}: ${last_price}, {round(last_change * 100, 2)}%')
+  print(f'{symbol}: ${last_price}, {round(last_change * 100, 2)}%')
 
   mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
 
@@ -329,7 +329,7 @@ def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
     raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${last_price}, {round(last_change * 100, 2)}%')
 
   next_earnings_date = get_next_earnings_date(symbol)
-  printout(f"{symbol}: Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
+  print(f"{symbol}: Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
 
   expirations = fetch_options_expirations(symbol)
   if SHOULD_AVOID_EARNINGS:
@@ -354,8 +354,11 @@ def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
 
     chains.append(chain)
 
+  title = f"{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)"
+  print(title)
+
   params = dict(
-    title = f'{symbol} {option_type.title()}s: Strikes @ Z-Score={zscore} ({(1-REFERENCE_CONFIDENCE[zscore])*100}% confidence)',
+    title = title,
     text = '\n'.join((
      f'\${last_price}, {round(last_change * 100, 2)}%',
      f'Next earnings: {next_earnings_date.date()}',
@@ -373,10 +376,10 @@ def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
   # Calculate average price change and sigma of 1 day.
   prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
 
-  last_price = get_last_price(symbol)
+  last_price = fetch_last_price(symbol)
   last_close = prices_df.iloc[-2]['close']
   last_change = (last_price - last_close) / last_close
-  printout(f'{symbol}: ${last_price}, {round(last_change * 100, 2)}%')
+  print(f'{symbol}: ${last_price}, {round(last_change * 100, 2)}%')
 
   mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
 
@@ -401,8 +404,11 @@ def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
 
     chains.append(chain)
 
+  title = f"{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)"
+  print(title)
+
   params = dict(
-    title = f'{symbol} {option_type.title()}s: Strikes @ Z-Score={zscore} ({(1-REFERENCE_CONFIDENCE[zscore])*100}% confidence)',
+    title = title,
     text = '\n'.join((
      f'\${last_price}, {round(last_change * 100, 2)}%',
      f'{MU}={mu * 100:.2f}%',
@@ -411,5 +417,57 @@ def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
     ylabel= 'Annual ROI',
   )
   render_roi_vs_expiry(symbol, chains, last_price, ax=ax, params=params)
- 
 
+
+def find_worthy_contracts(symbol: str, option_type: str, axes):
+  start_date = START_DATE
+  # Calculate average price change and sigma of 1 day.
+  prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
+
+  last_price = fetch_last_price(symbol)
+  last_close = prices_df.iloc[-2]['close']
+  last_change = (last_price - last_close) / last_close
+  print(f'{symbol}: ${last_price}, {round(last_change * 100, 2)}%')
+
+  mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
+
+  expirations = fetch_options_expirations(symbol)
+
+  plot_index = 0
+  zscores = [-1, 0, 1]
+  for zscore in zscores:
+
+    row_index = plot_index // 2
+    col_index = plot_index % 2
+
+    ax = axes[row_index, col_index]
+
+    chains = []
+    for expiry in expirations:
+      dte = calc_dte(expiry)
+
+      target_strike = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
+
+      chain = fetch_options_chain(symbol, expiry, option_type=option_type, target_price=target_strike, plus_minus=5)
+      if not chain:
+        continue
+      
+      for contract in chain:
+        contract['target_strike'] = target_strike
+
+      chains.append(chain)
+
+    title = f'{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)'
+    print(title)
+
+    params = dict(
+      title = title,
+      text = '\n'.join((
+       f'\${last_price}, {round(last_change * 100, 2)}%',
+       f'{MU}={mu * 100:.2f}%',
+       f'{SIGMA_LOWER}={sigma * 100:.2f}%',
+      )),
+      ylabel= 'Annual ROI',
+    )
+    render_roi_vs_expiry(symbol, chains, last_price, ax=ax, params=params)
+    plot_index += 1

@@ -6,8 +6,9 @@ import pandas as pd
 
 from datetime import datetime
 from pandas.core.common import not_none
-from utils import cached
+from utils import is_market_hours
 from constants import START_DATE, USE_EARNINGS_CSV
+from decorators import cached
 
 
 TRADIER_API_KEY = os.environ['TRADIER_API_KEY']
@@ -23,7 +24,8 @@ def make_api_request(endpoint, params):
   return json_response
 
 
-def get_last_price(symbol: str) -> float:
+@cached(force_refresh=is_market_hours())
+def fetch_last_price(symbol: str) -> float:
   endpoint = 'https://api.tradier.com/v1/markets/quotes'
   params = {'symbols': symbol, 'greeks': 'false'}
   return make_api_request(endpoint, params)['quotes']['quote']['last']
@@ -43,7 +45,7 @@ def fetch_options_expirations(symbol):
   return make_api_request(endpoint, params)['expirations']['date']
 
 
-@cached(force_refresh=datetime.now().weekday() in (0,1,2,3,4) and 6 < datetime.now().hour < 13)
+@cached(force_refresh=is_market_hours())
 def fetch_options_chain(symbol, expiry_date, option_type=None, target_price=None, plus_minus=0):
   endpoint = 'https://api.tradier.com/v1/markets/options/chains'
   params = {'symbol': symbol, 'expiration': expiry_date, 'greeks': 'true'}

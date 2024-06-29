@@ -29,7 +29,7 @@ def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
   df['annual_roi'] = df.apply(calc_annual_roi, axis=1)
 
   # Capture closest strikes.
-  buffer = max(round(atm_strike * 0.05), 0.50)
+  buffer = 3 # max(round(atm_strike * 0.05), 0.50)
   buffer_mask = (abs(df['strike'] - df['target_strike']) < buffer)
 
   # ROI needs to be worth it plus ROI becomes linear when too itm so remove.

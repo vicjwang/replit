@@ -2,44 +2,23 @@ import os
 import math
 import pandas as pd
 import pickle
+import pytz
+import subprocess
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from constants import (
-  IS_VERBOSE, REFERENCE_CONFIDENCE, USE_EARNINGS_CSV, START_DATE,
-  CACHE_DIR
+  IS_VERBOSE, USE_EARNINGS_CSV, START_DATE,
 )
 
 
-def cached(force_refresh=False):
-  """
-  A function that creates a decorator which will use "cache_filepath" for caching the results of the decorated function "fn".
-  """
-  def decorator(fn):  # define a decorator for a function "fn"
+def is_market_hours():
+  market_open = time(9, 30)
+  market_close = time(16, 0)
 
-    def wrapped(*args, **kwargs):   # define a wrapper that will finally call "fn" with all arguments
+  eastern = pytz.timezone('US/Eastern')
+  now = datetime.now(eastern)
 
-      # if cache exists -> load it and return its content
-      today_date = datetime.now().strftime('%Y%m%d')
-      cache_filename = f'{today_date}-{fn.__name__}-{"_".join([arg for arg in args])}.pkl'
-      cache_filepath = os.path.join(CACHE_DIR, cache_filename)
-      if os.path.exists(cache_filepath) and not force_refresh:
-        with open(cache_filepath, 'rb') as cachehandle:
-          print("using cached result from '%s'" % cache_filepath)
-          return pickle.load(cachehandle)
-
-      # execute the function with all arguments passed
-      res = fn(*args, **kwargs)
-
-      # write to cache file
-      with open(cache_filepath, 'wb') as cachehandle:
-        print("saving result to cache '%s'" % cache_filepath)
-        pickle.dump(res, cachehandle)
-
-      return res
-
-    return wrapped
-
-  return decorator
+  return now.weekday() in (0,1,2,3,4) and market_open <= now.time() <= market_close
 
 
 def calc_dte(expiry: str):

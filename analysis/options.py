@@ -17,8 +17,8 @@ from scipy.stats import norm
 from utils import (
   printout,
   count_trading_days,
-  calc_expected_strike,
   calc_dte,
+  calc_expected_strike,
 )
 
 from vendors.tradier import (
@@ -45,6 +45,7 @@ from constants import (
   ZSCORE_PHI,
 )
 
+from analysis.models import PriceModel
 from graphical import render_roi_vs_expiry
 
 
@@ -78,7 +79,6 @@ def filter_historical_prices(symbol, prices):
 
 
 def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
-  earnings_dates = fetch_past_earnings_dates(symbol)  # sorted in most recent first
   
   if not earnings_dates and SHOULD_AVOID_EARNINGS:
     raise ValueError(f'No earnings dates provided when SHOULD_AVOID_EARNINGS={SHOULD_AVOID_EARNINGS}.')
@@ -310,23 +310,21 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
 
 
 def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
-  start_date = START_DATE
-  # Calculate average price change and sigma of 1 day.
-  prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
 
-  last_price = fetch_last_price(symbol)
-  last_close = prices_df.iloc[-2]['close']
-  last_change = (last_price - last_close) / last_close
-  print(f'{symbol}: ${last_price}, {round(last_change * 100, 2)}%')
+  price_model = PriceModel(symbol)
+  price_model.print_latest()
 
-  mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
+  mu = price_model.get_daily_mean()
+  sigma = price_model.get_daily_stdev()
+  latest_price = price_model.get_latest_price()
+  latest_change = price_model.get_latest_change()
 
-  if option_type == 'call' and last_change > (0 * sigma):
+  if option_type == 'call' and latest_change > (0 * sigma):
     zscore = PHI_ZSCORE[MY_PHI]
-  elif option_type == 'put' and last_change < (0 * sigma):
+  elif option_type == 'put' and latest_change < (0 * sigma):
     zscore = -1*PHI_ZSCORE[MY_PHI]
   else:
-    raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${last_price}, {round(last_change * 100, 2)}%')
+    raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
 
   next_earnings_date = get_next_earnings_date(symbol)
   print(f"{symbol}: Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
@@ -343,7 +341,8 @@ def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
   chains = []
   for expiry in expirations:
     dte = calc_dte(expiry)
-    target_strike = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
+    target_strike = calc_expected_strike(latest_price, mu, sigma, dte, zscore=zscore)
+    target_strike = price_model.predict_price(dte, zscore)
 
     chain = fetch_options_chain(symbol, expiry, option_type=option_type, target_price=target_strike, plus_minus=target_strike * 0.2)
     if not chain:
@@ -360,14 +359,14 @@ def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
   params = dict(
     title = title,
     text = '\n'.join((
-     f'\${last_price}, {round(last_change * 100, 2)}%',
+     f'\${latest_price}, {round(latest_change * 100, 2)}%',
      f'Next earnings: {next_earnings_date.date()}',
      f'{MU}={mu * 100:.2f}%',
      f'{SIGMA_LOWER}={sigma * 100:.2f}%',
     )),
     ylabel= 'Annual ROI',
   )
-  render_roi_vs_expiry(symbol, chains, last_price, ax=ax, params=params)
+  render_roi_vs_expiry(symbol, chains, latest_price, ax=ax, params=params)
  
 
 def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
@@ -471,3 +470,4 @@ def find_worthy_contracts(symbol: str, option_type: str, axes):
     )
     render_roi_vs_expiry(symbol, chains, last_price, ax=ax, params=params)
     plot_index += 1
+

@@ -4,7 +4,7 @@ from collections import namedtuple
 IS_WIDESCREEN = True
 IS_PHONE = False
 MY_PHI = 84  # in percent
-SHOW_GRAPHS = True
+SHOW_GRAPHS = False
 IS_DEBUG = False
 IS_VERBOSE = False
 START_DATE = '2023-01-01'
@@ -38,7 +38,7 @@ NOTABLE_DELTA_MAX = .2
 
 FIG_WIDTH = 5 if IS_PHONE else 26 if IS_WIDESCREEN else 13.5
 FIG_HEIGHT = 6 if IS_PHONE else 10 if IS_WIDESCREEN else 7.5
-NCOLS = 1 if IS_PHONE else 2
+FIG_NCOLS = 1 if IS_PHONE else 2
 
 # Using Unicode escape sequences
 DELTA_UPPER = '\u0394'

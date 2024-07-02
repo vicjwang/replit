@@ -18,10 +18,10 @@ from analysis.options import (
 from constants import (
   FIG_WIDTH,
   FIG_HEIGHT,
+  FIG_NCOLS,
   TICKERS,
   IS_DEBUG,
   SHOW_GRAPHS,
-  NCOLS,
 )
 
 
@@ -31,8 +31,8 @@ def get_tickers():
     dict(
       #**COVERED_CALLS,
       #**CSEPs,
-      #**TEST_SYMBOLS
-      **LTDITM_PUTS,
+      **TEST_SYMBOLS
+      #**LTDITM_PUTS,
     )
   )
 
@@ -91,26 +91,12 @@ def run(strategy=None):
 
   tickers = sorted([ticker for ticker in TICKERS if SHOW_TICKERS[ticker.symbol] == 1], key=lambda t: t.symbol)
 
-  # add some extra rows for visibility on iPad
-  ncols = NCOLS
-  nrows = min(max(math.ceil(len(tickers) / ncols), 2), 4)
-  fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
+  fig, ax = plt.subplots(figsize=(FIG_WIDTH, FIG_HEIGHT))
   
-  plot_index = 0
+  plot_index = 1
   
   for ticker in tickers:
     symbol = ticker.symbol
-    if plot_index >= ncols * nrows:
-      print(f'{symbol}: Plot space maximum reached. Proceeding to graph..')
-      break
-
-    row_index = plot_index // 2
-    col_index = plot_index % 2
-
-    if ncols == 1:
-      ax = axes[plot_index]
-    else:
-      ax = axes[row_index, col_index]
 
     try:
       print()
@@ -123,12 +109,14 @@ def run(strategy=None):
         traceback.print_exc()
       continue
 
-  for ax in axes.flatten():
-    if not ax.has_data():
-      fig.delaxes(ax)
+    if ax.has_data():
+      nrow = plot_index if FIG_NCOLS == 1 else (plot_index // 2) + plot_index % FIG_NCOLS
+      ax = fig.add_subplot(nrow, FIG_NCOLS, plot_index)
 
-  num_axes = len(fig.get_axes())
-    
+#  for ax in axes.flatten():
+#    if not ax.has_data():
+#      fig.delaxes(ax)
+
   if SHOW_GRAPHS:
     print('Rendering plot in Output tab...')
     plt.tight_layout()
@@ -158,7 +146,7 @@ def sell_LTDOTM_calls_strategy(symbol, ax):
 
 def sell_puts_strategy(symbol):
 
-  ncols = NCOLS
+  ncols = FIG_NCOLS
   nrows = 2
   fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
   
@@ -178,11 +166,10 @@ def sell_puts_strategy(symbol):
 
 
 if __name__ == '__main__':
-  sell_puts_strategy('NVDA')
+#  sell_puts_strategy('NVDA')
 
-#  run(sell_short_term_options_strategy)
+  run(sell_short_term_options_strategy)
   #run(sell_LTDITM_puts_strategy)
 
   # NOTE: YoY ROI generally not worth it (<.05)
 #  run(sell_LTDOTM_calls_strategy)
-

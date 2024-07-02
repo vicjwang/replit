@@ -33,6 +33,7 @@ from vendors.tradier import (
 )
 
 from constants import (
+  DATE_FORMAT,
   SHOULD_AVOID_EARNINGS,
   START_DATE,
   NOTABLE_DELTA_MAX,
@@ -86,7 +87,7 @@ def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
 
   high_52 = 0
   low_52 = 1_000_000_000
-  year_ago = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
+  year_ago = (datetime.now() - timedelta(days=365)).strftime(DATE_FORMAT)
 
   change_df = pd.DataFrame({
     'date': pd.to_datetime(prices_df['date']),
@@ -140,8 +141,8 @@ def fetch_filtered_options_expirations(symbol, expiry_days=None):
   # Get all expirations up to 7 weeks.
   expirations = fetch_options_expirations(symbol)[4:7]
 
-  expiry_date = (datetime.now() + timedelta(days=expiry_days)).strftime('%Y-%m-%d') if expiry_days else None
-  default_date = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
+  expiry_date = (datetime.now() + timedelta(days=expiry_days)).strftime(DATE_FORMAT) if expiry_days else None
+  default_date = (datetime.now() + timedelta(days=60)).strftime(DATE_FORMAT)
 
   # NOTE next earnings call date - consider up to week before earnings.
   #next_earnings_date = fetch_next_earnings_date(symbol)
@@ -151,7 +152,7 @@ def fetch_filtered_options_expirations(symbol, expiry_days=None):
   date_cutoff = min(next_earnings_date or 'z', expiry_date or 'z', default_date)
 
   # If there is no next earnings date, use 2 months from now right before theta crush.
-  expirations = [expiry for expiry in expirations if (datetime.strptime(date_cutoff, '%Y-%m-%d') - datetime.strptime(expiry, '%Y-%m-%d')).days > 0]
+  expirations = [expiry for expiry in expirations if (datetime.strptime(date_cutoff, DATE_FORMAT) - datetime.strptime(expiry, DATE_FORMAT)).days > 0]
 
   printout(f'Next earnings date: {next_earnings_date}\n')
   return expirations

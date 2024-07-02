@@ -3,6 +3,7 @@ import pandas as pd
 from analysis.models import PriceModel
 
 from constants import (
+  DATE_FORMAT,
   DELTA_UPPER,
   PHI_ZSCORE,
   MU,
@@ -43,14 +44,14 @@ class DerivativeStrategy:
     # Target strikes depend on expiry dates so concat by expiry date groups.
     for expiry_date in self.expiry_dates:
 
-      chain = fetch_options_chain(self.symbol, expiry_date.strftime('%Y-%m-%d'))
+      chain = fetch_options_chain(self.symbol, expiry_date.strftime(DATE_FORMAT))
       if not chain:
         continue
 
       chain_df = pd.DataFrame.from_records(chain)
       chain_df = chain_df[chain_df['option_type'] == self.option_type]
 
-      dte = calc_dte(expiry_date.strftime('%Y-%m-%d'))
+      dte = calc_dte(expiry_date.strftime(DATE_FORMAT))
       for _zscore in sorted(PHI_ZSCORE.values()):
         zscore = _zscore if self.option_type == 'call' else -1*_zscore
         target_strike = self.price_model.predict_price(dte, zscore)
@@ -83,7 +84,7 @@ class DerivativeStrategy:
     # Cash needs to be worth it per contract.
     cash_mask = (self.df['bid'] > WORTHY_MIN_BID) 
 
-    mask = cash_mask & buffer_mask & roi_mask & otm_only_mask
+    mask = cash_mask & buffer_mask #& roi_mask & otm_only_mask
 
     if start_date:
       start_mask = (self.df['expiration_date'] > start_date)
@@ -108,11 +109,11 @@ class DerivativeStrategy:
     print(text)
     return text
 
-  def graph_roi_vs_expiry(self, ax, target_colname=None):
+  def graph_roi_vs_expiry(self, ax, zscore=None):
+    if zscore is None:
+      zscore=WIN_PROBA_ZSCORE[self.side][self.option_type][MY_WIN_PROBA]
 
-    if target_colname is None:
-      zscore = WIN_PROBA_ZSCORE[self.side][self.option_type][MY_WIN_PROBA]
-      target_colname = f"{zscore}_sigma_target"
+    target_colname = f"{zscore}_sigma_target"
 
     mu = self.price_model.get_daily_mean()
     sigma = self.price_model.get_daily_stdev()
@@ -120,7 +121,7 @@ class DerivativeStrategy:
     latest_change = self.price_model.get_latest_change()
 
     rois = self.graph_df['yoy_roi']
-    expirations = self.graph_df['expiration_date']
+    expirations = self.graph_df['expiration_date'].dt.strftime(DATE_FORMAT)
     strikes = self.graph_df['strike']
     bids = self.graph_df['bid']
     deltas = self.graph_df['delta']
@@ -139,7 +140,7 @@ class DerivativeStrategy:
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, rotation=30)
 
-    title = self._print(f"{self.side.title()} {self.option_type.title()} ({MY_WIN_PROBA}% Win Proba)")
+    title = self._print(f"{self.side.title()} {self.option_type.title()} Strikes @ Z-Score={zscore} ({MY_WIN_PROBA}% Win Proba)")
     ax.set_title(title)
 
     text = '\n'.join((

@@ -10,6 +10,7 @@ from vendors.tradier import (
 )
 
 from constants import (
+  DATE_FORMAT,
   START_DATE,
   SHOULD_AVOID_EARNINGS,
   MU,
@@ -75,7 +76,7 @@ class PriceModel:
     latest_change = self.get_latest_change()
     self.format_print(f"${latest_price}, {round(latest_change * 100, 2)}%")
     self.format_print(f"{MU}={round(self.daily_mean*100, 4)}% {SIGMA_LOWER}={round(self.daily_stdev*100, 4)}%")
-    self.format_print(f"Next earnings={self.next_earnings_date.strftime('%Y-%m-%d')}")
+    self.format_print(f"Next earnings={self.next_earnings_date.strftime(DATE_FORMAT)}")
 
   def format_print(self, s):
     ret = f"{self.symbol}: {s}"

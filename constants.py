@@ -6,7 +6,7 @@ IS_PHONE = False
 MY_WIN_PROBA = 84  # in percent
 SHOW_GRAPHS = True
 IS_DEBUG = True
-IS_VERBOSE = True
+IS_VERBOSE = False
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
 MIN_EXPIRY_DATESTR = '2025-01-01'
@@ -57,6 +57,7 @@ SIGMA_UPPER = '\u03A3'
 SIGMA_LOWER = '\u03C3'
 MU = '\u03BC'
 
+SIDE_SHORT = 'short'
 
 Ticker = namedtuple('Ticker', ['symbol', 'name', 'next_earnings'], defaults=(None, None, None))
 
@@ -90,4 +91,5 @@ TICKERS = [
 ]
 
 
+DATE_FORMAT = '%Y-%m-%d'
 CACHE_DIR = './cache'

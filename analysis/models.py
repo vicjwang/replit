@@ -47,10 +47,6 @@ class PriceModel:
     # Save some key stats.
     self.daily_mean = self.prices_df[mask][self._COLNAME_DAILY_CHANGE].mean()
     self.daily_stdev = self.prices_df[mask][self._COLNAME_DAILY_CHANGE].std()
-    self.print(f"{MU}={self.daily_mean} {SIGMA_LOWER}={self.daily_stdev}")
-
-  def print(self, s):
-    print(f"{self.symbol}: {s}")
 
   def get_next_earnings_date(self):
     return self.next_earnings_date
@@ -74,9 +70,14 @@ class PriceModel:
     target_price = latest_price * (1 + days*mu + zscore*math.sqrt(days)*sigma)
     return target_price
 
-  def print_latest(self):
+  def pprint(self):
     latest_price = self.get_latest_price() 
     latest_change = self.get_latest_change()
-    print(f'{self.symbol}: ${latest_price}, {round(latest_change * 100, 2)}%')
-   
+    self.format_print(f"${latest_price}, {round(latest_change * 100, 2)}%")
+    self.format_print(f"{MU}={round(self.daily_mean*100, 4)}% {SIGMA_LOWER}={round(self.daily_stdev*100, 4)}%")
+    self.format_print(f"Next earnings={self.next_earnings_date.strftime('%Y-%m-%d')}")
 
+  def format_print(self, s):
+    ret = f"{self.symbol}: {s}"
+    print(ret)
+    return ret

@@ -97,7 +97,6 @@ def render_many(strategy):
 
   tickers = get_tickers()
   for ticker in tickers:
-    print()
     symbol = ticker.symbol
 
     try:
@@ -125,6 +124,8 @@ def render_many(strategy):
       col_index = i % 2
       ax = axes[row_index, col_index]
 
+    print()
+    strat.pprint()
     strat.graph_roi_vs_expiry(ax)
 
   print('Rendering plot in Output tab...')
@@ -179,19 +180,20 @@ def sell_short_term_derivatives(symbol):
   else:
     raise ValueError(f'Unclassified symbol: {symbol}')
 
-  deriv_strat = DerivativeStrategy(symbol, option_type=option_type)
+  side = 'short'
+
+  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
   price_model = deriv_strat.get_price_model()
 
   latest_price = price_model.get_latest_price()
   latest_change = price_model.get_latest_change()
 
-  zscore = WIN_PROBA_ZSCORE['short'][option_type][MY_WIN_PROBA]
+  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
 
   if (option_type == 'call' and latest_change < 0) or (option_type == 'put' and latest_change > 0):
     raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
 
   next_earnings_date = price_model.get_next_earnings_date()
-  price_model.print(f"Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
 
   deriv_strat.prepare_graph_data(zscore, end_date=next_earnings_date)
   return deriv_strat

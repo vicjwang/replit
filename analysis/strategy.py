@@ -26,10 +26,11 @@ from utils import (
 
 class DerivativeStrategy:
   # TODO (vjw): remove option_type?
-  def __init__(self, symbol, option_type='call'):
+  def __init__(self, symbol, option_type='call', side='short'):
     self.symbol = symbol
     self.option_type = option_type
     self.price_model = PriceModel(symbol)
+    self.side = side
   
     self.expiry_dates = pd.to_datetime(fetch_options_expirations(symbol))
     self._load()
@@ -97,7 +98,12 @@ class DerivativeStrategy:
     if len(self.graph_df) == 0:
       raise ValueError(f'No eligible options for graph found.')
 
-  def print(self, s):
+  def pprint(self):
+    self.price_model.pprint()
+#    for e, t in sorted(set(zip(self.expiry_dates, target_strikes))):
+#      self._print(f'{e} target=${t:.2f}')
+
+  def _print(self, s):
     text = f"{self.symbol}: {s}"
     print(text)
     return text
@@ -105,7 +111,7 @@ class DerivativeStrategy:
   def graph_roi_vs_expiry(self, ax, target_colname=None):
 
     if target_colname is None:
-      zscore = WIN_PROBA_ZSCORE['short'][self.option_type][MY_WIN_PROBA]
+      zscore = WIN_PROBA_ZSCORE[self.side][self.option_type][MY_WIN_PROBA]
       target_colname = f"{zscore}_sigma_target"
 
     mu = self.price_model.get_daily_mean()
@@ -120,11 +126,8 @@ class DerivativeStrategy:
     deltas = self.graph_df['delta']
     target_strikes = self.graph_df[target_colname].round(2)
 
-    for e, t in sorted(set(zip(expirations, target_strikes))):
-      self.print(f'{e} target=${t:.2f}')
-
     # Graph of ROI vs Expirations.
-    self.print(f'Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})')
+    self._print(f'Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})')
     ax.plot(expirations, rois)
     for x, y, strike, bid, delta in zip(expirations, rois, strikes, bids, deltas):
       label = f'K=\${strike}; \${bid} ({DELTA_UPPER}={round(delta, 2)})'
@@ -136,7 +139,7 @@ class DerivativeStrategy:
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, rotation=30)
 
-    title = self.print(f"{self.option_type.title()} {MY_WIN_PROBA} Win Proba")
+    title = self._print(f"{self.side.title()} {self.option_type.title()} ({MY_WIN_PROBA}% Win Proba)")
     ax.set_title(title)
 
     text = '\n'.join((

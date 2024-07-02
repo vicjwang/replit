@@ -45,7 +45,7 @@ from constants import (
   ZSCORE_PHI,
 )
 
-from analysis.models import PriceModel
+from analysis.models import PriceModel, DerivativeDataFrame
 from graphical import render_roi_vs_expiry
 
 
@@ -314,60 +314,25 @@ def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
   price_model = PriceModel(symbol)
   price_model.print_latest()
 
-  mu = price_model.get_daily_mean()
-  sigma = price_model.get_daily_stdev()
   latest_price = price_model.get_latest_price()
   latest_change = price_model.get_latest_change()
 
-  if option_type == 'call' and latest_change > (0 * sigma):
+  if option_type == 'call' and latest_change > 0:
     zscore = PHI_ZSCORE[MY_PHI]
-  elif option_type == 'put' and latest_change < (0 * sigma):
+  elif option_type == 'put' and latest_change < 0:
     zscore = -1*PHI_ZSCORE[MY_PHI]
   else:
     raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
 
+  deriv_df = DerivativeDataFrame(symbol, option_type=option_type, price_model=price_model)
+
   next_earnings_date = get_next_earnings_date(symbol)
-  print(f"{symbol}: Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
+  price_model.print(f"Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
 
-  expirations = fetch_options_expirations(symbol)
-  if SHOULD_AVOID_EARNINGS:
-    expirations = [x for x in expirations if x < str(next_earnings_date)]
-  else:
-    expirations = [x for x in expirations if x > MIN_EXPIRY_DATESTR]
+  deriv_df.prepare_graph_data(end_date=next_earnings_date)
+  target_colname = f"{zscore}_sigma_target"
+  deriv_df.graph_roi_vs_expiry(ax, target_colname)
 
-  if len(expirations) == 0:
-    raise ValueError(f'Skipping - no appropriate expiries found.')
-
-  chains = []
-  for expiry in expirations:
-    dte = calc_dte(expiry)
-    target_strike = calc_expected_strike(latest_price, mu, sigma, dte, zscore=zscore)
-    target_strike = price_model.predict_price(dte, zscore)
-
-    chain = fetch_options_chain(symbol, expiry, option_type=option_type, target_price=target_strike, plus_minus=target_strike * 0.2)
-    if not chain:
-      continue
-    
-    for contract in chain:
-      contract['target_strike'] = target_strike
-
-    chains.append(chain)
-
-  title = f"{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)"
-  print(title)
-
-  params = dict(
-    title = title,
-    text = '\n'.join((
-     f'\${latest_price}, {round(latest_change * 100, 2)}%',
-     f'Next earnings: {next_earnings_date.date()}',
-     f'{MU}={mu * 100:.2f}%',
-     f'{SIGMA_LOWER}={sigma * 100:.2f}%',
-    )),
-    ylabel= 'Annual ROI',
-  )
-  render_roi_vs_expiry(symbol, chains, latest_price, ax=ax, params=params)
- 
 
 def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
   

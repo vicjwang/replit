@@ -62,7 +62,11 @@ def cached(force_refresh=False):
         subprocess.run(['mkdir', cache_dir])
 
       # if cache exists -> load it and return its content
-      cache_filename = f'{fn.__name__}-{"_".join([arg for arg in args])}.pkl'
+      argstr = '_'.join([str(arg) for arg in args])
+      kwstr = '_'.join([str(v) for v in kwargs.values()])
+      filename_parts = [part for part in [fn.__name__, argstr, kwstr] if part]
+
+      cache_filename = '-'.join(filename_parts)
       cache_filepath = os.path.join(cache_dir, cache_filename)
       if os.path.exists(cache_filepath) and not force_refresh:
         with open(cache_filepath, 'rb') as cachehandle:

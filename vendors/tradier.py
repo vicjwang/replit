@@ -52,7 +52,7 @@ def fetch_options_chain(symbol, expiry_date, option_type=None, target_price=None
   chain = make_api_request(endpoint, params)['options']['option']
 
   max_chain_strike = chain[-1]['strike']
-  if max_chain_strike < (target_price - plus_minus):
+  if target_price and plus_minus and max_chain_strike < (target_price - plus_minus):
     print(f'Warning: Max strike {max_chain_strike} out of range for {expiry_date} target: {target_price}')
     return []
 

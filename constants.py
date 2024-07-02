@@ -4,9 +4,9 @@ from collections import namedtuple
 IS_WIDESCREEN = True
 IS_PHONE = False
 MY_PHI = 84  # in percent
-SHOW_GRAPHS = False
-IS_DEBUG = False
-IS_VERBOSE = False
+SHOW_GRAPHS = True
+IS_DEBUG = True
+IS_VERBOSE = True
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
 MIN_EXPIRY_DATESTR = '2025-01-01'

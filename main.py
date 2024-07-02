@@ -30,15 +30,15 @@ def get_tickers():
     bool,
     dict(
       #**COVERED_CALLS,
-      #**CSEPs,
-      **TEST_SYMBOLS
+      **CSEPs,
+      #**TEST_SYMBOLS
       #**LTDITM_PUTS,
     )
   )
 
 
 TEST_SYMBOLS = dict(
-  MDB=1,
+  #NVDA=1,
 #  DDOG=1,
 #  OKTA=1,
 )

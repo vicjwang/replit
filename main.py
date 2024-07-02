@@ -11,7 +11,6 @@ from collections import defaultdict
 from datetime import datetime
 
 from analysis.options import (
-  find_worthy_long_term_contracts,
   find_worthy_contracts,
 )
 from analysis.strategy import DerivativeStrategy
@@ -19,11 +18,13 @@ from constants import (
   FIG_WIDTH,
   FIG_HEIGHT,
   FIG_NCOLS,
-  TICKERS,
   IS_DEBUG,
-  SHOW_GRAPHS,
-  WIN_PROBA_ZSCORE,
+  MIN_EXPIRY_DATESTR,
   MY_WIN_PROBA,
+  SHOW_GRAPHS,
+  SIDE_SHORT,
+  TICKERS,
+  WIN_PROBA_ZSCORE,
 )
 
 
@@ -31,9 +32,9 @@ def get_tickers():
   selected_tickers = defaultdict(
     bool,
     dict(
-      #**COVERED_CALLS,
+      **COVERED_CALLS,
       #**CSEPs,
-      **TEST_SYMBOLS
+      #**TEST_SYMBOLS
       #**LTDITM_PUTS,
     )
   )
@@ -134,44 +135,6 @@ def render_many(strategy):
   plt.show()
 
 
-def _run(strategy=None):
-  assert strategy, 'Must provide strategy to run.'
-
-  tickers = get_tickers()
-
-  fig, ax = plt.subplots(figsize=(FIG_WIDTH, FIG_HEIGHT))
-  
-  plot_index = 1
-  
-  for ticker in tickers:
-    symbol = ticker.symbol
-
-    try:
-      print()
-      strategy(symbol, ax)
-      plot_index += 1
-
-    except Exception as e:
-      print(f'{symbol}: Skipping - {e}')
-      if IS_DEBUG:
-        traceback.print_exc()
-      continue
-
-    if ax.has_data():
-      nrow = plot_index if FIG_NCOLS == 1 else (plot_index // 2) + plot_index % FIG_NCOLS
-      ax = fig.add_subplot(nrow, FIG_NCOLS, plot_index)
-
-#  for ax in axes.flatten():
-#    if not ax.has_data():
-#      fig.delaxes(ax)
-
-  if SHOW_GRAPHS:
-    print('Rendering plot in Output tab...')
-    plt.tight_layout()
-    fig.subplots_adjust()
-    plt.show()
-
-
 def sell_short_term_derivatives(symbol):
   if symbol in COVERED_CALLS:
     option_type = 'call'
@@ -180,7 +143,7 @@ def sell_short_term_derivatives(symbol):
   else:
     raise ValueError(f'Unclassified symbol: {symbol}')
 
-  side = 'short'
+  side = SIDE_SHORT
 
   deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
   price_model = deriv_strat.get_price_model()
@@ -199,13 +162,26 @@ def sell_short_term_derivatives(symbol):
   return deriv_strat
 
 
-def sell_LTDITM_puts_strategy(symbol, ax):
+def sell_LTDITM_puts(symbol):
   # Look at far away deep ITM Puts.
-  find_worthy_long_term_contracts(symbol, 'put', ax)
+  side = SIDE_SHORT
+  option_type = 'put'
+  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
+
+  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
+  deriv_strat.prepare_graph_data(zscore, start_date=MIN_EXPIRY_DATESTR)
+  return deriv_strat
 
 
-def sell_LTDOTM_calls_strategy(symbol, ax):
-  find_worthy_long_term_contracts(symbol, 'call', ax)
+def sell_LTDOTM_calls(symbol):
+  # NOTE: YoY ROI generally not worth it (<.05)
+  side = SIDE_SHORT
+  option_type = 'call'
+  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
+
+  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
+  deriv_strat.prepare_graph_data(zscore, start_date=MIN_EXPIRY_DATESTR)
+  return deriv_strat
 
 
 def sell_puts_strategy(symbol):
@@ -232,8 +208,6 @@ def sell_puts_strategy(symbol):
 if __name__ == '__main__':
 #  sell_puts_strategy('NVDA')
 
-  render_many(sell_short_term_derivatives)
-  #run(sell_LTDITM_puts_strategy)
+#  render_many(sell_short_term_derivatives)
+  render_many(sell_LTDITM_puts)
 
-  # NOTE: YoY ROI generally not worth it (<.05)
-#  run(sell_LTDOTM_calls_strategy)

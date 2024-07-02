@@ -5,7 +5,7 @@ IS_WIDESCREEN = True
 IS_PHONE = False
 MY_WIN_PROBA = 84  # in percent
 SHOW_GRAPHS = True
-IS_DEBUG = True
+IS_DEBUG = False
 IS_VERBOSE = False
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
@@ -90,6 +90,44 @@ TICKERS = [
   #Ticker(symbol='GME', name='Gamestop'),
 ]
 
+COVERED_CALLS = dict(
+  DDOG=1,  # cc
+  DIS=1,  # cc
+  OKTA=1,  # cc
+  MDB=1,  # cc
+  SNAP=1,  # cc
+  TWLO=1,  # cc
+)
+
+CSEPS = dict(
+  AAPL=1,
+  ABNB=1,
+  AMZN=1,
+  CRM=1,
+  CRWD=1,
+  GOOG=1,
+  META=1,
+  GME=1,
+  MSFT=1,
+  MSTR=1,
+  NVDA=1,
+  SHOP=1,
+  SQ=1,
+  TSLA=1,
+  TSM=1,
+  TXN=1,
+)
+
+LTDITM_PUTS = dict(
+  MDB=1,  # cc
+  SNAP=1,  # cc
+  MSTR=1,
+  AMZN=1,
+  TSLA=1,
+  TSM=1,
+  TXN=1,
+  NVDA=1,
+)
 
 DATE_FORMAT = '%Y-%m-%d'
 CACHE_DIR = './cache'

@@ -3,10 +3,14 @@ import pandas as pd
 from analysis.models import PriceModel
 
 from constants import (
+  COVERED_CALLS,
+  CSEPS,
   DATE_FORMAT,
   DELTA_UPPER,
   PHI_ZSCORE,
+  MIN_EXPIRY_DATESTR,
   MU,
+  SIDE_SHORT,
   SIGMA_LOWER,
   MY_WIN_PROBA,
   WIN_PROBA_ZSCORE,
@@ -155,3 +159,54 @@ class DerivativeStrategy:
 
     ylabel= 'ROI (YoY)'
     ax.set_ylabel(ylabel)
+
+
+def sell_short_term_derivatives(symbol):
+  if symbol in COVERED_CALLS:
+    option_type = 'call'
+  elif symbol in CSEPS:
+    option_type = 'put'
+  else:
+    raise ValueError(f'Unclassified symbol: {symbol}')
+
+  side = SIDE_SHORT
+
+  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
+  price_model = deriv_strat.get_price_model()
+
+  latest_price = price_model.get_latest_price()
+  latest_change = price_model.get_latest_change()
+
+  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
+
+  if (option_type == 'call' and latest_change < 0) or (option_type == 'put' and latest_change > 0):
+    raise ValueError(f'{symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
+
+  next_earnings_date = price_model.get_next_earnings_date()
+
+  deriv_strat.prepare_graph_data(zscore, end_date=next_earnings_date)
+  return deriv_strat
+
+
+def sell_LTDITM_puts(symbol):
+  # Look at far away deep ITM Puts.
+  side = SIDE_SHORT
+  option_type = 'put'
+  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
+
+  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
+  deriv_strat.prepare_graph_data(zscore, start_date=MIN_EXPIRY_DATESTR)
+  return deriv_strat
+
+
+def sell_LTDOTM_calls(symbol):
+  # NOTE: YoY ROI generally not worth it (<.05)
+  side = SIDE_SHORT
+  option_type = 'call'
+  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
+
+  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
+  deriv_strat.prepare_graph_data(zscore, start_date=MIN_EXPIRY_DATESTR)
+  return deriv_strat
+
+

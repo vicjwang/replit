@@ -13,18 +13,17 @@ from datetime import datetime
 from analysis.options import (
   find_worthy_contracts,
 )
-from analysis.strategy import DerivativeStrategy
+from analysis import strategy
 from constants import (
+  COVERED_CALLS,
+  CSEPS,
+  LTDITM_PUTS,
   FIG_WIDTH,
   FIG_HEIGHT,
   FIG_NCOLS,
   IS_DEBUG,
-  MIN_EXPIRY_DATESTR,
-  MY_WIN_PROBA,
   SHOW_GRAPHS,
-  SIDE_SHORT,
   TICKERS,
-  WIN_PROBA_ZSCORE,
 )
 
 
@@ -33,7 +32,7 @@ def get_tickers():
     bool,
     dict(
       **COVERED_CALLS,
-      #**CSEPs,
+      **CSEPS,
       #**TEST_SYMBOLS
       #**LTDITM_PUTS,
     )
@@ -48,46 +47,6 @@ TEST_SYMBOLS = dict(
   NVDA=1,
   CRWD=1,
   MSTR=1,
-)
-
-
-COVERED_CALLS = dict(
-  DDOG=1,  # cc
-  DIS=1,  # cc
-  OKTA=1,  # cc
-  MDB=1,  # cc
-  SNAP=1,  # cc
-  TWLO=1,  # cc
-)
-
-CSEPs = dict(
-  AAPL=1,
-  ABNB=1,
-  AMZN=1,
-  CRM=1,
-  CRWD=1,
-  GOOG=1,
-  META=1,
-  GME=1,
-  MSFT=1,
-  MSTR=1,
-  NVDA=1,
-  SHOP=1,
-  SQ=1,
-  TSLA=1,
-  TSM=1,
-  TXN=1,
-)
-
-LTDITM_PUTS = dict(
-  MDB=1,  # cc
-  SNAP=1,  # cc
-  MSTR=1,
-  AMZN=1,
-  TSLA=1,
-  TSM=1,
-  TXN=1,
-  NVDA=1,
 )
 
 
@@ -135,55 +94,6 @@ def render_many(strategy):
   plt.show()
 
 
-def sell_short_term_derivatives(symbol):
-  if symbol in COVERED_CALLS:
-    option_type = 'call'
-  elif symbol in CSEPs:
-    option_type = 'put'
-  else:
-    raise ValueError(f'Unclassified symbol: {symbol}')
-
-  side = SIDE_SHORT
-
-  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
-  price_model = deriv_strat.get_price_model()
-
-  latest_price = price_model.get_latest_price()
-  latest_change = price_model.get_latest_change()
-
-  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
-
-  if (option_type == 'call' and latest_change < 0) or (option_type == 'put' and latest_change > 0):
-    raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
-
-  next_earnings_date = price_model.get_next_earnings_date()
-
-  deriv_strat.prepare_graph_data(zscore, end_date=next_earnings_date)
-  return deriv_strat
-
-
-def sell_LTDITM_puts(symbol):
-  # Look at far away deep ITM Puts.
-  side = SIDE_SHORT
-  option_type = 'put'
-  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
-
-  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
-  deriv_strat.prepare_graph_data(zscore, start_date=MIN_EXPIRY_DATESTR)
-  return deriv_strat
-
-
-def sell_LTDOTM_calls(symbol):
-  # NOTE: YoY ROI generally not worth it (<.05)
-  side = SIDE_SHORT
-  option_type = 'call'
-  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
-
-  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
-  deriv_strat.prepare_graph_data(zscore, start_date=MIN_EXPIRY_DATESTR)
-  return deriv_strat
-
-
 def sell_puts_strategy(symbol):
 
   ncols = FIG_NCOLS
@@ -208,6 +118,6 @@ def sell_puts_strategy(symbol):
 if __name__ == '__main__':
 #  sell_puts_strategy('NVDA')
 
-#  render_many(sell_short_term_derivatives)
-  render_many(sell_LTDITM_puts)
+  render_many(strategy.sell_short_term_derivatives)
+  #render_many(strategy.sell_LTDITM_puts)
 

@@ -11,10 +11,10 @@ from collections import defaultdict
 from datetime import datetime
 
 from analysis.options import (
-  find_worthy_short_term_contracts, 
   find_worthy_long_term_contracts,
   find_worthy_contracts,
 )
+from analysis.strategy import DerivativeStrategy
 from constants import (
   FIG_WIDTH,
   FIG_HEIGHT,
@@ -22,25 +22,31 @@ from constants import (
   TICKERS,
   IS_DEBUG,
   SHOW_GRAPHS,
+  WIN_PROBA_ZSCORE,
+  MY_WIN_PROBA,
 )
 
 
 def get_tickers():
-  return defaultdict(
+  selected_tickers = defaultdict(
     bool,
     dict(
       #**COVERED_CALLS,
-      **CSEPs,
-      #**TEST_SYMBOLS
+      #**CSEPs,
+      **TEST_SYMBOLS
       #**LTDITM_PUTS,
     )
   )
 
+  ret = sorted([ticker for ticker in TICKERS if selected_tickers[ticker.symbol] == 1], key=lambda t: t.symbol)
+  return ret
+
+
 
 TEST_SYMBOLS = dict(
-  #NVDA=1,
-#  DDOG=1,
-#  OKTA=1,
+  NVDA=1,
+  CRWD=1,
+  MSTR=1,
 )
 
 
@@ -83,13 +89,54 @@ LTDITM_PUTS = dict(
   NVDA=1,
 )
 
-SHOW_TICKERS = get_tickers()
+
+def render_many(strategy):
+  # Run strategy across many tickers.
+
+  strats = []
+
+  tickers = get_tickers()
+  for ticker in tickers:
+    print()
+    symbol = ticker.symbol
+
+    try:
+      strat = strategy(symbol)
+      strats.append(strat)
+
+    except Exception as e:
+      print(f'{symbol}: Skipping - {e}')
+      if IS_DEBUG:
+        traceback.print_exc()
+      continue
+
+  if not SHOW_GRAPHS or not strats:
+    raise RuntimeError('No graphs to render.')
+
+  nrows = math.ceil(len(strats) / FIG_NCOLS)
+  ncols = FIG_NCOLS
+  fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
+  for i, strat in enumerate(strats):
+
+    if nrows == 1 or ncols == 1:
+      ax = axes[i]
+    else:
+      row_index = i // 2
+      col_index = i % 2
+      ax = axes[row_index, col_index]
+
+    strat.graph_roi_vs_expiry(ax)
+
+  print('Rendering plot in Output tab...')
+  plt.tight_layout()
+  fig.subplots_adjust()
+  plt.show()
 
 
-def run(strategy=None):
+def _run(strategy=None):
   assert strategy, 'Must provide strategy to run.'
 
-  tickers = sorted([ticker for ticker in TICKERS if SHOW_TICKERS[ticker.symbol] == 1], key=lambda t: t.symbol)
+  tickers = get_tickers()
 
   fig, ax = plt.subplots(figsize=(FIG_WIDTH, FIG_HEIGHT))
   
@@ -124,7 +171,7 @@ def run(strategy=None):
     plt.show()
 
 
-def sell_short_term_options_strategy(symbol, ax):
+def sell_short_term_derivatives(symbol):
   if symbol in COVERED_CALLS:
     option_type = 'call'
   elif symbol in CSEPs:
@@ -132,7 +179,22 @@ def sell_short_term_options_strategy(symbol, ax):
   else:
     raise ValueError(f'Unclassified symbol: {symbol}')
 
-  find_worthy_short_term_contracts(symbol, option_type, ax)
+  deriv_strat = DerivativeStrategy(symbol, option_type=option_type)
+  price_model = deriv_strat.get_price_model()
+
+  latest_price = price_model.get_latest_price()
+  latest_change = price_model.get_latest_change()
+
+  zscore = WIN_PROBA_ZSCORE['short'][option_type][MY_WIN_PROBA]
+
+  if (option_type == 'call' and latest_change < 0) or (option_type == 'put' and latest_change > 0):
+    raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
+
+  next_earnings_date = price_model.get_next_earnings_date()
+  price_model.print(f"Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
+
+  deriv_strat.prepare_graph_data(zscore, end_date=next_earnings_date)
+  return deriv_strat
 
 
 def sell_LTDITM_puts_strategy(symbol, ax):
@@ -168,7 +230,7 @@ def sell_puts_strategy(symbol):
 if __name__ == '__main__':
 #  sell_puts_strategy('NVDA')
 
-  run(sell_short_term_options_strategy)
+  render_many(sell_short_term_derivatives)
   #run(sell_LTDITM_puts_strategy)
 
   # NOTE: YoY ROI generally not worth it (<.05)

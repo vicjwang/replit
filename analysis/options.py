@@ -45,7 +45,8 @@ from constants import (
   WIN_PROBA_ZSCORE,
 )
 
-from analysis.models import PriceModel, DerivativeDataFrame
+from analysis.models import PriceModel
+from analysis.strategy import DerivativeStrategy
 from graphical import render_roi_vs_expiry
 
 
@@ -308,29 +309,6 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   '''
   
   return worthy_contracts
-
-
-def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
-
-  price_model = PriceModel(symbol)
-  price_model.print_latest()
-
-  latest_price = price_model.get_latest_price()
-  latest_change = price_model.get_latest_change()
-
-  zscore = WIN_PROBA_ZSCORE['short'][option_type][MY_WIN_PROBA]
-
-  if (option_type == 'call' and latest_change < 0) or (option_type == 'put' and latest_change > 0):
-    raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
-
-  deriv_df = DerivativeDataFrame(symbol, option_type=option_type, price_model=price_model)
-
-  next_earnings_date = get_next_earnings_date(symbol)
-  price_model.print(f"Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
-
-  deriv_df.prepare_graph_data(zscore, end_date=next_earnings_date)
-  target_colname = f"{zscore}_sigma_target"
-  deriv_df.graph_roi_vs_expiry(ax, target_colname)
 
 
 def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):

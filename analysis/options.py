@@ -40,9 +40,9 @@ from constants import (
   MU,
   SIGMA_LOWER,
   PHI_ZSCORE,
-  MY_PHI,
+  MY_WIN_PROBA,
   MIN_EXPIRY_DATESTR,
-  ZSCORE_PHI,
+  WIN_PROBA_ZSCORE,
 )
 
 from analysis.models import PriceModel, DerivativeDataFrame
@@ -197,7 +197,7 @@ def pprint_contract(contract):
 
   return
 
-
+"""
 def should_sell_cc(contract, exp_strike, zscore):
   # Strategy: if market thinks strike at delta = 0.158 is HIGHER than my expected +1 sigma strike, sell covered call.
   #    aka Rule: if strike(delta=0.158) > S, sell CC.
@@ -211,7 +211,7 @@ def should_sell_cc(contract, exp_strike, zscore):
   delta = contract['greeks']['delta']
   roi = contract['annual_roi']
 
-  confidence = ZSCORE_PHI['call'][zscore]
+  confidence = MY_WIN_PROBA/100
 
   is_market_overest = (strike - exp_strike)/exp_strike > -0.02 and delta > confidence
   is_delta_notable = confidence <= delta <= NOTABLE_DELTA_MAX
@@ -232,6 +232,7 @@ def should_sell_csep(contract, exp_strike, zscore):
   should_sell = (strike - exp_strike)/exp_strike > -0.02 and delta > ZSCORE_PHI['put'][zscore]
   printout(f' Sell csep? {should_sell}')
   return should_sell
+"""
 
 
 def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None):
@@ -317,11 +318,9 @@ def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
   latest_price = price_model.get_latest_price()
   latest_change = price_model.get_latest_change()
 
-  if option_type == 'call' and latest_change > 0:
-    zscore = PHI_ZSCORE[MY_PHI]
-  elif option_type == 'put' and latest_change < 0:
-    zscore = -1*PHI_ZSCORE[MY_PHI]
-  else:
+  zscore = WIN_PROBA_ZSCORE['short'][option_type][MY_WIN_PROBA]
+
+  if (option_type == 'call' and latest_change < 0) or (option_type == 'put' and latest_change > 0):
     raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
 
   deriv_df = DerivativeDataFrame(symbol, option_type=option_type, price_model=price_model)
@@ -329,7 +328,7 @@ def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
   next_earnings_date = get_next_earnings_date(symbol)
   price_model.print(f"Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
 
-  deriv_df.prepare_graph_data(end_date=next_earnings_date)
+  deriv_df.prepare_graph_data(zscore, end_date=next_earnings_date)
   target_colname = f"{zscore}_sigma_target"
   deriv_df.graph_roi_vs_expiry(ax, target_colname)
 
@@ -352,7 +351,7 @@ def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
   if len(expirations) == 0:
     raise ValueError(f'Skipping - no appropriate expiries found.')
 
-  zscore = PHI_ZSCORE[MY_PHI]
+  zscore = PHI_ZSCORE[MY_WIN_PROBA]
 
   chains = []
   for expiry in expirations:
@@ -368,7 +367,7 @@ def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
 
     chains.append(chain)
 
-  title = f"{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)"
+  title = f"vjw TITLE"#{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)"
   print(title)
 
   params = dict(
@@ -421,7 +420,7 @@ def find_worthy_contracts(symbol: str, option_type: str, axes):
 
       chains.append(chain)
 
-    title = f'{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)'
+    title = f'vjw TITLE' #{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)'
     print(title)
 
     params = dict(

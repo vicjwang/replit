@@ -22,10 +22,10 @@ from constants import (
   PHI_ZSCORE,
   MU,
   SIGMA_LOWER,
-  MY_PHI,
+  MY_WIN_PROBA,
   WORTHY_MIN_ROI,
   WORTHY_MIN_BID,
-  ZSCORE_PHI,
+  WIN_PROBA_ZSCORE,
 )
 
 
@@ -132,10 +132,9 @@ class DerivativeDataFrame:
     self.df['yoy_roi'] = self.df.apply(calc_annual_roi, axis=1)
     self.df['expiration_date'] = pd.to_datetime(self.df['expiration_date'])
 
-  def prepare_graph_data(self, start_date=None, end_date=None):
+  def prepare_graph_data(self, zscore, start_date=None, end_date=None):
     
     # Capture closest strikes.
-    zscore = PHI_ZSCORE[MY_PHI] if self.option_type == 'call' else -1*PHI_ZSCORE[MY_PHI]
     buffer = 3 # max(round(atm_strike * 0.05), 0.50)
     buffer_mask = (abs(self.df['strike'] - self.df[f"{zscore}_sigma_target"]) < buffer)
 
@@ -168,8 +167,6 @@ class DerivativeDataFrame:
 
   def graph_roi_vs_expiry(self, ax, target_colname):
 
-    zscore = PHI_ZSCORE[MY_PHI] if self.option_type == 'call' else -1*PHI_ZSCORE[MY_PHI]
-
     mu = self.price_model.get_daily_mean()
     sigma = self.price_model.get_daily_stdev()
     latest_price = self.price_model.get_latest_price()
@@ -198,7 +195,7 @@ class DerivativeDataFrame:
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, rotation=30)
 
-    title = self.print(f"{self.option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[self.option_type][zscore]}% ITM confidence)")
+    title = self.print(f"{self.option_type.title()} {MY_WIN_PROBA} Win Proba")
     ax.set_title(title)
 
     text = '\n'.join((

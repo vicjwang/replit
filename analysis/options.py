@@ -17,8 +17,8 @@ from scipy.stats import norm
 from utils import (
   printout,
   count_trading_days,
-  calc_expected_strike,
   calc_dte,
+  calc_expected_strike,
 )
 
 from vendors.tradier import (
@@ -33,6 +33,7 @@ from vendors.tradier import (
 )
 
 from constants import (
+  DATE_FORMAT,
   SHOULD_AVOID_EARNINGS,
   START_DATE,
   NOTABLE_DELTA_MAX,
@@ -40,11 +41,13 @@ from constants import (
   MU,
   SIGMA_LOWER,
   PHI_ZSCORE,
-  MY_PHI,
+  MY_WIN_PROBA,
   MIN_EXPIRY_DATESTR,
-  ZSCORE_PHI,
+  WIN_PROBA_ZSCORE,
 )
 
+from analysis.models import PriceModel
+from analysis.strategy import DerivativeStrategy
 from graphical import render_roi_vs_expiry
 
 
@@ -78,14 +81,13 @@ def filter_historical_prices(symbol, prices):
 
 
 def calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None):
-  earnings_dates = fetch_past_earnings_dates(symbol)  # sorted in most recent first
   
   if not earnings_dates and SHOULD_AVOID_EARNINGS:
     raise ValueError(f'No earnings dates provided when SHOULD_AVOID_EARNINGS={SHOULD_AVOID_EARNINGS}.')
 
   high_52 = 0
   low_52 = 1_000_000_000
-  year_ago = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
+  year_ago = (datetime.now() - timedelta(days=365)).strftime(DATE_FORMAT)
 
   change_df = pd.DataFrame({
     'date': pd.to_datetime(prices_df['date']),
@@ -139,8 +141,8 @@ def fetch_filtered_options_expirations(symbol, expiry_days=None):
   # Get all expirations up to 7 weeks.
   expirations = fetch_options_expirations(symbol)[4:7]
 
-  expiry_date = (datetime.now() + timedelta(days=expiry_days)).strftime('%Y-%m-%d') if expiry_days else None
-  default_date = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
+  expiry_date = (datetime.now() + timedelta(days=expiry_days)).strftime(DATE_FORMAT) if expiry_days else None
+  default_date = (datetime.now() + timedelta(days=60)).strftime(DATE_FORMAT)
 
   # NOTE next earnings call date - consider up to week before earnings.
   #next_earnings_date = fetch_next_earnings_date(symbol)
@@ -150,7 +152,7 @@ def fetch_filtered_options_expirations(symbol, expiry_days=None):
   date_cutoff = min(next_earnings_date or 'z', expiry_date or 'z', default_date)
 
   # If there is no next earnings date, use 2 months from now right before theta crush.
-  expirations = [expiry for expiry in expirations if (datetime.strptime(date_cutoff, '%Y-%m-%d') - datetime.strptime(expiry, '%Y-%m-%d')).days > 0]
+  expirations = [expiry for expiry in expirations if (datetime.strptime(date_cutoff, DATE_FORMAT) - datetime.strptime(expiry, DATE_FORMAT)).days > 0]
 
   printout(f'Next earnings date: {next_earnings_date}\n')
   return expirations
@@ -197,7 +199,7 @@ def pprint_contract(contract):
 
   return
 
-
+"""
 def should_sell_cc(contract, exp_strike, zscore):
   # Strategy: if market thinks strike at delta = 0.158 is HIGHER than my expected +1 sigma strike, sell covered call.
   #    aka Rule: if strike(delta=0.158) > S, sell CC.
@@ -211,7 +213,7 @@ def should_sell_cc(contract, exp_strike, zscore):
   delta = contract['greeks']['delta']
   roi = contract['annual_roi']
 
-  confidence = ZSCORE_PHI['call'][zscore]
+  confidence = MY_WIN_PROBA/100
 
   is_market_overest = (strike - exp_strike)/exp_strike > -0.02 and delta > confidence
   is_delta_notable = confidence <= delta <= NOTABLE_DELTA_MAX
@@ -232,6 +234,7 @@ def should_sell_csep(contract, exp_strike, zscore):
   should_sell = (strike - exp_strike)/exp_strike > -0.02 and delta > ZSCORE_PHI['put'][zscore]
   printout(f' Sell csep? {should_sell}')
   return should_sell
+"""
 
 
 def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None):
@@ -309,67 +312,6 @@ def determine_overpriced_option_contracts(symbol, start_date=START_DATE, ax=None
   return worthy_contracts
 
 
-def find_worthy_short_term_contracts(symbol: str, option_type: str, ax):
-  start_date = START_DATE
-  # Calculate average price change and sigma of 1 day.
-  prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
-
-  last_price = fetch_last_price(symbol)
-  last_close = prices_df.iloc[-2]['close']
-  last_change = (last_price - last_close) / last_close
-  print(f'{symbol}: ${last_price}, {round(last_change * 100, 2)}%')
-
-  mu, sigma, high_52, low_52 = calc_historical_price_movement_stats(symbol, prices_df, periods=1, ax=None)
-
-  if option_type == 'call' and last_change > (0 * sigma):
-    zscore = PHI_ZSCORE[MY_PHI]
-  elif option_type == 'put' and last_change < (0 * sigma):
-    zscore = -1*PHI_ZSCORE[MY_PHI]
-  else:
-    raise ValueError(f'Skipping - {symbol} {option_type} move threshold not met. ${last_price}, {round(last_change * 100, 2)}%')
-
-  next_earnings_date = get_next_earnings_date(symbol)
-  print(f"{symbol}: Next earnings={next_earnings_date.strftime('%Y-%m-%d')}")
-
-  expirations = fetch_options_expirations(symbol)
-  if SHOULD_AVOID_EARNINGS:
-    expirations = [x for x in expirations if x < str(next_earnings_date)]
-  else:
-    expirations = [x for x in expirations if x > MIN_EXPIRY_DATESTR]
-
-  if len(expirations) == 0:
-    raise ValueError(f'Skipping - no appropriate expiries found.')
-
-  chains = []
-  for expiry in expirations:
-    dte = calc_dte(expiry)
-    target_strike = calc_expected_strike(last_price, mu, sigma, dte, zscore=zscore)
-
-    chain = fetch_options_chain(symbol, expiry, option_type=option_type, target_price=target_strike, plus_minus=target_strike * 0.2)
-    if not chain:
-      continue
-    
-    for contract in chain:
-      contract['target_strike'] = target_strike
-
-    chains.append(chain)
-
-  title = f"{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)"
-  print(title)
-
-  params = dict(
-    title = title,
-    text = '\n'.join((
-     f'\${last_price}, {round(last_change * 100, 2)}%',
-     f'Next earnings: {next_earnings_date.date()}',
-     f'{MU}={mu * 100:.2f}%',
-     f'{SIGMA_LOWER}={sigma * 100:.2f}%',
-    )),
-    ylabel= 'Annual ROI',
-  )
-  render_roi_vs_expiry(symbol, chains, last_price, ax=ax, params=params)
- 
-
 def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
   
   start_date = START_DATE
@@ -388,7 +330,7 @@ def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
   if len(expirations) == 0:
     raise ValueError(f'Skipping - no appropriate expiries found.')
 
-  zscore = PHI_ZSCORE[MY_PHI]
+  zscore = PHI_ZSCORE[MY_WIN_PROBA]
 
   chains = []
   for expiry in expirations:
@@ -404,7 +346,7 @@ def find_worthy_long_term_contracts(symbol: str, option_type: str, ax):
 
     chains.append(chain)
 
-  title = f"{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)"
+  title = f"vjw TITLE"#{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)"
   print(title)
 
   params = dict(
@@ -457,7 +399,7 @@ def find_worthy_contracts(symbol: str, option_type: str, axes):
 
       chains.append(chain)
 
-    title = f'{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)'
+    title = f'vjw TITLE' #{symbol}: {option_type.title()} strikes @ Z-Score={zscore} ({ZSCORE_PHI[option_type][zscore]}% ITM confidence)'
     print(title)
 
     params = dict(
@@ -471,3 +413,4 @@ def find_worthy_contracts(symbol: str, option_type: str, axes):
     )
     render_roi_vs_expiry(symbol, chains, last_price, ax=ax, params=params)
     plot_index += 1
+

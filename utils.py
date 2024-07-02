@@ -7,7 +7,7 @@ import subprocess
 
 from datetime import datetime, timedelta, time
 from constants import (
-  IS_VERBOSE, USE_EARNINGS_CSV, START_DATE,
+  IS_VERBOSE, USE_EARNINGS_CSV, START_DATE, DATE_FORMAT,
 )
 
 
@@ -23,7 +23,7 @@ def is_market_hours():
 
 def calc_dte(expiry: str):
   today = datetime.now()
-  expiry_dt = datetime.strptime(expiry, '%Y-%m-%d') + timedelta(days=1)
+  expiry_dt = datetime.strptime(expiry, DATE_FORMAT) + timedelta(days=1)
 
   trading_dte = len(pd.date_range(start=today, end=expiry_dt, freq='B'))
   return trading_dte
@@ -31,7 +31,7 @@ def calc_dte(expiry: str):
 
 def calc_annual_roi(contract) -> float:
   strike = contract['strike']
-  expiry_date = datetime.strptime(contract['expiration_date'], '%Y-%m-%d').date()
+  expiry_date = datetime.strptime(contract['expiration_date'], DATE_FORMAT).date()
   bid = contract['bid']
   days_to_expiry = (expiry_date - datetime.now().date()).days
   

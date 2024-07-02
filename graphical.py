@@ -11,43 +11,16 @@ from constants import (
 )
 
 
-def render_roi_vs_expiry(symbol, chains, atm_strike, ax=None, params=None):
+def render_roi_vs_expiry(symbol, df, target_colname, ax=None, params=None):
   if not ax:
     raise ValueError('No ax to graph on.')
 
-  if not chains:
-    raise ValueError('No option chains to graph.')
-
-  # Store all chains in DataFrame.
-  df = pd.DataFrame()
-  for chain in chains:
-    df = pd.concat([df, pd.DataFrame.from_records(chain)], axis=0)
-
-  # Unnest greek columns.
-  df = pd.concat([df, df['greeks'].apply(pd.Series)], axis=1)
-  
-  df['annual_roi'] = df.apply(calc_annual_roi, axis=1)
-
-  # Capture closest strikes.
-  buffer = 3 # max(round(atm_strike * 0.05), 0.50)
-  buffer_mask = (abs(df['strike'] - df['target_strike']) < buffer)
-
-  # ROI needs to be worth it plus ROI becomes linear when too itm so remove.
-  roi_mask = (df['annual_roi'] > WORTHY_MIN_ROI)
-  otm_only_mask = (df['annual_roi'] < 1)
-
-  # Cash needs to be worth it per contract.
-  cash_mask = (df['bid'] > WORTHY_MIN_BID) 
-
-  mask = cash_mask & buffer_mask & roi_mask & otm_only_mask
-
-  masked_df = df[mask]  
-  rois = df[mask]['annual_roi']
-  expirations = df[mask]['expiration_date']
-  strikes = df[mask]['strike']
-  bids = df[mask]['bid']
-  deltas = df[mask]['delta']
-  target_strikes = df[mask]['target_strike'].round(2)
+  rois = df['yoy_roi']
+  expirations = df['expiration_date']
+  strikes = df['strike']
+  bids = df['bid']
+  deltas = df['delta']
+  target_strikes = df[target_colname].round(2)
 
   for e, t in sorted(set(zip(expirations, target_strikes))):
     print(f'{symbol}: {e} target=${t:.2f}')

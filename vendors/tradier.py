@@ -7,7 +7,7 @@ import pandas as pd
 from datetime import datetime
 from pandas.core.common import not_none
 from utils import is_market_hours
-from constants import START_DATE, USE_EARNINGS_CSV
+from constants import START_DATE, USE_EARNINGS_CSV, DATE_FORMAT
 from decorators import cached
 
 
@@ -52,7 +52,7 @@ def fetch_options_chain(symbol, expiry_date, option_type=None, target_price=None
   chain = make_api_request(endpoint, params)['options']['option']
 
   max_chain_strike = chain[-1]['strike']
-  if max_chain_strike < (target_price - plus_minus):
+  if target_price and plus_minus and max_chain_strike < (target_price - plus_minus):
     print(f'Warning: Max strike {max_chain_strike} out of range for {expiry_date} target: {target_price}')
     return []
 
@@ -104,7 +104,7 @@ def fetch_earnings_dates(symbol, start_date:str=None):
 def fetch_next_earnings_date(symbol):
   events = fetch_earnings_dates(symbol)
 
-  today_datestr = datetime.now().strftime('%Y-%m-%d')
+  today_datestr = datetime.now().strftime(DATE_FORMAT)
 
   future_events = sorted([event for event in events if event['begin_date_time'] > today_datestr], key=lambda event: event['begin_date_time'])
 

@@ -11,111 +11,59 @@ from collections import defaultdict
 from datetime import datetime
 
 from analysis.options import (
-  find_worthy_short_term_contracts, 
-  find_worthy_long_term_contracts,
   find_worthy_contracts,
 )
+from analysis import strategy
 from constants import (
+  COVERED_CALLS,
+  CSEPS,
+  LTDITM_PUTS,
   FIG_WIDTH,
   FIG_HEIGHT,
-  TICKERS,
+  FIG_NCOLS,
   IS_DEBUG,
   SHOW_GRAPHS,
-  NCOLS,
+  TICKERS,
 )
 
 
 def get_tickers():
-  return defaultdict(
+  selected_tickers = defaultdict(
     bool,
     dict(
       #**COVERED_CALLS,
-      #**CSEPs,
-      #**TEST_SYMBOLS
-      **LTDITM_PUTS,
+      #**CSEPS,
+      **TEST_SYMBOLS
+      #**LTDITM_PUTS,
     )
   )
 
+  ret = sorted([ticker for ticker in TICKERS if selected_tickers[ticker.symbol] == 1], key=lambda t: t.symbol)
+  return ret
+
 
 TEST_SYMBOLS = dict(
+  NVDA=1,
   MDB=1,
-#  DDOG=1,
-#  OKTA=1,
+#  CRWD=1,
+#  MSTR=1,
+#  SNAP=1,
+#  TWLO=1,
 )
 
 
-COVERED_CALLS = dict(
-  DDOG=1,  # cc
-  DIS=1,  # cc
-  OKTA=1,  # cc
-  MDB=1,  # cc
-  SNAP=1,  # cc
-  TWLO=1,  # cc
-)
+def render_many(strategy):
+  # Run strategy across many tickers.
 
-CSEPs = dict(
-  AAPL=1,
-  ABNB=1,
-  AMZN=1,
-  CRM=1,
-  CRWD=1,
-  GOOG=1,
-  META=1,
-  GME=1,
-  MSFT=1,
-  MSTR=1,
-  NVDA=1,
-  SHOP=1,
-  SQ=1,
-  TSLA=1,
-  TSM=1,
-  TXN=1,
-)
+  strats = []
 
-LTDITM_PUTS = dict(
-  MDB=1,  # cc
-  SNAP=1,  # cc
-  MSTR=1,
-  AMZN=1,
-  TSLA=1,
-  TSM=1,
-  TXN=1,
-  NVDA=1,
-)
-
-SHOW_TICKERS = get_tickers()
-
-
-def run(strategy=None):
-  assert strategy, 'Must provide strategy to run.'
-
-  tickers = sorted([ticker for ticker in TICKERS if SHOW_TICKERS[ticker.symbol] == 1], key=lambda t: t.symbol)
-
-  # add some extra rows for visibility on iPad
-  ncols = NCOLS
-  nrows = min(max(math.ceil(len(tickers) / ncols), 2), 4)
-  fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
-  
-  plot_index = 0
-  
+  tickers = get_tickers()
   for ticker in tickers:
     symbol = ticker.symbol
-    if plot_index >= ncols * nrows:
-      print(f'{symbol}: Plot space maximum reached. Proceeding to graph..')
-      break
-
-    row_index = plot_index // 2
-    col_index = plot_index % 2
-
-    if ncols == 1:
-      ax = axes[plot_index]
-    else:
-      ax = axes[row_index, col_index]
 
     try:
-      print()
-      strategy(symbol, ax)
-      plot_index += 1
+      strat = strategy(symbol)
+      strats.append(strat)
 
     except Exception as e:
       print(f'{symbol}: Skipping - {e}')
@@ -123,66 +71,64 @@ def run(strategy=None):
         traceback.print_exc()
       continue
 
-  for ax in axes.flatten():
-    if not ax.has_data():
-      fig.delaxes(ax)
+  if not SHOW_GRAPHS or not strats:
+    raise RuntimeError('No graphs to render.')
 
-  num_axes = len(fig.get_axes())
-    
-  if SHOW_GRAPHS:
-    print('Rendering plot in Output tab...')
-    plt.tight_layout()
-    fig.subplots_adjust()
-    plt.show()
-
-
-def sell_short_term_options_strategy(symbol, ax):
-  if symbol in COVERED_CALLS:
-    option_type = 'call'
-  elif symbol in CSEPs:
-    option_type = 'put'
-  else:
-    raise ValueError(f'Unclassified symbol: {symbol}')
-
-  find_worthy_short_term_contracts(symbol, option_type, ax)
-
-
-def sell_LTDITM_puts_strategy(symbol, ax):
-  # Look at far away deep ITM Puts.
-  find_worthy_long_term_contracts(symbol, 'put', ax)
-
-
-def sell_LTDOTM_calls_strategy(symbol, ax):
-  find_worthy_long_term_contracts(symbol, 'call', ax)
-
-
-def sell_puts_strategy(symbol):
-
-  ncols = NCOLS
-  nrows = 2
+  nrows = math.ceil(len(strats) / FIG_NCOLS)
+  ncols = FIG_NCOLS
   fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
-  
-  find_worthy_contracts(symbol, 'put', axes)
+  for i, strat in enumerate(strats):
 
-  for ax in axes.flatten():
-    if not ax.has_data():
-      fig.delaxes(ax)
+    if nrows == 1 or ncols == 1:
+      ax = axes[i]
+    else:
+      row_index = i // 2
+      col_index = i % 2
+      ax = axes[row_index, col_index]
 
-  num_axes = len(fig.get_axes())
-    
-  if SHOW_GRAPHS:
-    print('Rendering plot in Output tab...')
-    plt.tight_layout()
-    fig.subplots_adjust()
-    plt.show()
+    print()
+    strat.pprint()
+    strat.graph_roi_vs_expiry(ax)
+
+  fig.subplots_adjust()
+
+
+def render_one(strategy):
+  # Run strategy on one ticker.
+
+  ncols = FIG_NCOLS
+  nrows = 3
+  fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
+
+  i = 0
+  for zscore in [1, 0, -1]:
+    for option_type in ['call', 'put']:
+
+      if nrows == 1 or ncols == 1:
+        ax = axes[i]
+      else:
+        row_index = i // 2
+        col_index = i % 2
+        ax = axes[row_index, col_index]
+
+      strategy.prepare_graph_data(option_type, zscore)
+      strategy.graph_roi_vs_expiry(ax, zscore)
+      i += 1
+
+  fig.subplots_adjust()
 
 
 if __name__ == '__main__':
-  sell_puts_strategy('NVDA')
 
-#  run(sell_short_term_options_strategy)
-  #run(sell_LTDITM_puts_strategy)
+#  render_many(strategy.sell_short_term_derivatives)
+#  render_many(strategy.sell_LTDITM_puts)
 
-  # NOTE: YoY ROI generally not worth it (<.05)
-#  run(sell_LTDOTM_calls_strategy)
+#  render_one(strategy.sell_derivatives('NVDA'))
+  #render_one(strategy.sell_derivatives('MDB'))
+  render_one(strategy.sell_derivatives('MSTR'))
 
+  if SHOW_GRAPHS:
+    print('Rendering plot in Output tab...')
+    plt.tight_layout()
+    plt.show()
+  

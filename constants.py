@@ -34,13 +34,19 @@ WIN_PROBA_ZSCORE = dict(
     #   - 84 win proba -> zscore = -1
     #   - 50 win proba -> zscore = 0
     #   - 16 win proba -> zscore = 1
-    put={p:-1*z for p, z in PHI_ZSCORE.items()},
+    put={p: -1*z for p, z in PHI_ZSCORE.items()},
   
     # For short call (aka CC), to keep premium without assignment aka expire OTM:
     #   - 84 win proba -> zscore = 1
     #   - 50 win proba -> zscore = 0
     #   - 16 win proba -> zscore = -1
     call=PHI_ZSCORE.copy(),
+  )
+)
+ZSCORE_WIN_PROBA = dict(
+  short=dict(
+    put={z: p for p, z in WIN_PROBA_ZSCORE['short']['put'].items()},
+    call={z: p for p, z in WIN_PROBA_ZSCORE['short']['call'].items()},
   )
 )
 

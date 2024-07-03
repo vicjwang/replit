@@ -31,9 +31,9 @@ def get_tickers():
   selected_tickers = defaultdict(
     bool,
     dict(
-      **COVERED_CALLS,
-      **CSEPS,
-      #**TEST_SYMBOLS
+      #**COVERED_CALLS,
+      #**CSEPS,
+      **TEST_SYMBOLS
       #**LTDITM_PUTS,
     )
   )
@@ -42,11 +42,12 @@ def get_tickers():
   return ret
 
 
-
 TEST_SYMBOLS = dict(
-  NVDA=1,
-  CRWD=1,
-  MSTR=1,
+#  NVDA=1,
+#  CRWD=1,
+#  MSTR=1,
+  SNAP=1,
+  TWLO=1,
 )
 
 
@@ -94,20 +95,28 @@ def render_many(strategy):
   plt.show()
 
 
-def sell_puts_strategy(symbol):
+def render_one(strategy):
+  # Run strategy on one ticker.
 
   ncols = FIG_NCOLS
-  nrows = 2
+  nrows = 3
   fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
-  
-  find_worthy_contracts(symbol, 'put', axes)
 
-  for ax in axes.flatten():
-    if not ax.has_data():
-      fig.delaxes(ax)
+  i = 0
+  for zscore in [1, 0, -1]:
+    for option_type in ['call', 'put']:
 
-  num_axes = len(fig.get_axes())
-    
+      if nrows == 1 or ncols == 1:
+        ax = axes[i]
+      else:
+        row_index = i // 2
+        col_index = i % 2
+        ax = axes[row_index, col_index]
+
+      strategy.prepare_graph_data(option_type, zscore)
+      strategy.graph_roi_vs_expiry(ax, zscore)
+      i += 1
+
   if SHOW_GRAPHS:
     print('Rendering plot in Output tab...')
     plt.tight_layout()
@@ -116,8 +125,9 @@ def sell_puts_strategy(symbol):
 
 
 if __name__ == '__main__':
-#  sell_puts_strategy('NVDA')
 
-  render_many(strategy.sell_short_term_derivatives)
+#  render_many(strategy.sell_short_term_derivatives)
   #render_many(strategy.sell_LTDITM_puts)
+
+  render_one(strategy.sell_derivatives('NVDA'))
 

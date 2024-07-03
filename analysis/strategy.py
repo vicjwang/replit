@@ -16,6 +16,7 @@ from constants import (
   WIN_PROBA_ZSCORE,
   WORTHY_MIN_ROI,
   WORTHY_MIN_BID,
+  ZSCORE_WIN_PROBA,
 )
 
 from vendors.tradier import (
@@ -30,10 +31,9 @@ from utils import (
 
 
 class DerivativeStrategy:
-  # TODO (vjw): remove option_type?
-  def __init__(self, symbol, option_type='call', side='short'):
+  
+  def __init__(self, symbol, side=None):
     self.symbol = symbol
-    self.option_type = option_type
     self.price_model = PriceModel(symbol)
     self.side = side
   
@@ -53,13 +53,10 @@ class DerivativeStrategy:
         continue
 
       chain_df = pd.DataFrame.from_records(chain)
-      chain_df = chain_df[chain_df['option_type'] == self.option_type]
 
       dte = calc_dte(expiry_date.strftime(DATE_FORMAT))
-      for _zscore in sorted(PHI_ZSCORE.values()):
-        zscore = _zscore if self.option_type == 'call' else -1*_zscore
+      for zscore in sorted(PHI_ZSCORE.values()):
         target_strike = self.price_model.predict_price(dte, zscore)
-
         colname = f"{zscore}_sigma_target"
         chain_df[colname] = target_strike
 
@@ -75,7 +72,13 @@ class DerivativeStrategy:
   def get_price_model(self):
     return self.price_model
 
-  def prepare_graph_data(self, zscore, start_date=None, end_date=None):
+  def prepare_graph_data(self, option_type, zscore, start_date=None, end_date=None):
+
+    if option_type not in ('call', 'put'):
+      raise ValueError("Invalid option_type: {option_type}")
+
+    option_type_mask = (self.df['option_type'] == option_type)
+    self.option_type = option_type
     
     # Capture closest strikes.
     buffer = 3 # max(round(atm_strike * 0.05), 0.50)
@@ -88,7 +91,7 @@ class DerivativeStrategy:
     # Cash needs to be worth it per contract.
     cash_mask = (self.df['bid'] > WORTHY_MIN_BID) 
 
-    mask = cash_mask & buffer_mask #& roi_mask & otm_only_mask
+    mask = option_type_mask & cash_mask & buffer_mask & roi_mask & otm_only_mask
 
     if start_date:
       start_mask = (self.df['expiration_date'] > start_date)
@@ -115,7 +118,10 @@ class DerivativeStrategy:
 
   def graph_roi_vs_expiry(self, ax, zscore=None):
     if zscore is None:
-      zscore=WIN_PROBA_ZSCORE[self.side][self.option_type][MY_WIN_PROBA]
+      zscore = WIN_PROBA_ZSCORE[self.side][self.option_type][MY_WIN_PROBA]
+      win_proba = MY_WIN_PROBA
+    else:
+      win_proba = ZSCORE_WIN_PROBA[self.side][self.option_type][zscore]
 
     target_colname = f"{zscore}_sigma_target"
 
@@ -144,7 +150,7 @@ class DerivativeStrategy:
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, rotation=30)
 
-    title = self._print(f"{self.side.title()} {self.option_type.title()} Strikes @ Z-Score={zscore} ({MY_WIN_PROBA}% Win Proba)")
+    title = self._print(f"{self.side.title()} {self.option_type.title()} Strikes @ Z-Score={zscore} ({win_proba}% Win Proba)")
     ax.set_title(title)
 
     text = '\n'.join((
@@ -171,7 +177,7 @@ def sell_short_term_derivatives(symbol):
 
   side = SIDE_SHORT
 
-  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
+  deriv_strat = DerivativeStrategy(symbol, side=side)
   price_model = deriv_strat.get_price_model()
 
   latest_price = price_model.get_latest_price()
@@ -184,7 +190,7 @@ def sell_short_term_derivatives(symbol):
 
   next_earnings_date = price_model.get_next_earnings_date()
 
-  deriv_strat.prepare_graph_data(zscore, end_date=next_earnings_date)
+  deriv_strat.prepare_graph_data(option_type, zscore, end_date=next_earnings_date)
   return deriv_strat
 
 
@@ -194,8 +200,8 @@ def sell_LTDITM_puts(symbol):
   option_type = 'put'
   zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
 
-  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
-  deriv_strat.prepare_graph_data(zscore, start_date=MIN_EXPIRY_DATESTR)
+  deriv_strat = DerivativeStrategy(symbol, side=side)
+  deriv_strat.prepare_graph_data(option_type, zscore, start_date=MIN_EXPIRY_DATESTR)
   return deriv_strat
 
 
@@ -205,8 +211,14 @@ def sell_LTDOTM_calls(symbol):
   option_type = 'call'
   zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
 
-  deriv_strat = DerivativeStrategy(symbol, option_type=option_type, side=side)
-  deriv_strat.prepare_graph_data(zscore, start_date=MIN_EXPIRY_DATESTR)
+  deriv_strat = DerivativeStrategy(symbol, side=side)
+  deriv_strat.prepare_graph_data(option_type, zscore, start_date=MIN_EXPIRY_DATESTR)
   return deriv_strat
 
+
+def sell_derivatives(symbol):
+  side = SIDE_SHORT
+
+  deriv_strat = DerivativeStrategy(symbol, side=side)
+  return deriv_strat
 

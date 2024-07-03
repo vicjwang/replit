@@ -21,9 +21,13 @@ def is_market_hours():
   return now.weekday() in (0,1,2,3,4) and market_open <= now.time() <= market_close
 
 
-def calc_dte(expiry: str):
+def calc_dte(expiry):
+  raise NotImplemented
+
+
+def calc_trading_dte(expiry_dt):
   today = datetime.now()
-  expiry_dt = datetime.strptime(expiry, DATE_FORMAT) + timedelta(days=1)
+  expiry_dt += timedelta(days=1)
 
   trading_dte = len(pd.date_range(start=today, end=expiry_dt, freq='B'))
   return trading_dte

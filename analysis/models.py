@@ -75,7 +75,7 @@ class PriceModel:
     latest_price = self.get_latest_price() 
     latest_change = self.get_latest_change()
     self.format_print(f"${latest_price}, {round(latest_change * 100, 2)}%")
-    self.format_print(f"{MU}={round(self.daily_mean*100, 4)}% {SIGMA_LOWER}={round(self.daily_stdev*100, 4)}%")
+    self.format_print(f"{MU}={self.daily_mean:.4f} {SIGMA_LOWER}={self.daily_stdev:.4f}")
     self.format_print(f"Next earnings={self.next_earnings_date.strftime(DATE_FORMAT)}")
 
   def format_print(self, s):

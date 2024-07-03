@@ -1,4 +1,6 @@
+import numpy as np
 import pandas as pd
+import sys
 
 from analysis.models import PriceModel
 
@@ -25,7 +27,7 @@ from vendors.tradier import (
 )
 
 from utils import (
-  calc_dte,
+  calc_trading_dte,
   calc_annual_roi,
 )
 
@@ -43,24 +45,28 @@ class DerivativeStrategy:
   # TODO (vjw): use_cache from pkl?
   def _load(self, use_cache=True):
   
-    self.df = pd.DataFrame()
+    self.df = None
     
     # Target strikes depend on expiry dates so concat by expiry date groups.
     for expiry_date in self.expiry_dates:
 
       chain = fetch_options_chain(self.symbol, expiry_date.strftime(DATE_FORMAT))
-      if not chain:
+      # Drop column if all values = nan.
+      chain_df = pd.DataFrame.from_records(chain).dropna(axis=1, how='all')
+
+      if chain_df.empty:
         continue
 
-      chain_df = pd.DataFrame.from_records(chain)
-
-      dte = calc_dte(expiry_date.strftime(DATE_FORMAT))
+      tdte = calc_trading_dte(expiry_date)
       for zscore in sorted(PHI_ZSCORE.values()):
-        target_strike = self.price_model.predict_price(dte, zscore)
+        target_strike = self.price_model.predict_price(tdte, zscore)
         colname = f"{zscore}_sigma_target"
         chain_df[colname] = target_strike
 
-      self.df = pd.concat([self.df, chain_df], axis=0)
+      if self.df is None:
+        self.df = chain_df
+      else:
+        self.df = pd.concat([self.df, chain_df], axis=0)
 
     # Helper columns including unnested greek columns.
     self.df = pd.concat([self.df, self.df['greeks'].apply(pd.Series)], axis=1)
@@ -77,39 +83,39 @@ class DerivativeStrategy:
     if option_type not in ('call', 'put'):
       raise ValueError("Invalid option_type: {option_type}")
 
-    option_type_mask = (self.df['option_type'] == option_type)
+    graph_df = self.df
+
+    # Capture 2 closest strikes.
+    target_colname = f"{zscore}_sigma_target"
+    graph_df = graph_df.groupby('expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])
+
+    option_type_mask = (graph_df['option_type'] == option_type)
     self.option_type = option_type
-    
-    # Capture closest strikes.
-    buffer = 3 # max(round(atm_strike * 0.05), 0.50)
-    buffer_mask = (abs(self.df['strike'] - self.df[f"{zscore}_sigma_target"]) < buffer)
 
     # ROI needs to be worth it plus ROI becomes linear when too itm so remove.
-    roi_mask = (self.df['yoy_roi'] > WORTHY_MIN_ROI)
-    otm_only_mask = (self.df['yoy_roi'] < 1)
+    roi_mask = (graph_df['yoy_roi'] > WORTHY_MIN_ROI)
+    otm_only_mask = (graph_df['yoy_roi'] < 1)
 
     # Cash needs to be worth it per contract.
-    cash_mask = (self.df['bid'] > WORTHY_MIN_BID) 
+    cash_mask = (graph_df['bid'] > WORTHY_MIN_BID) 
 
-    mask = option_type_mask & cash_mask & buffer_mask & roi_mask & otm_only_mask
+    mask = option_type_mask & cash_mask & roi_mask & otm_only_mask
 
     if start_date:
-      start_mask = (self.df['expiration_date'] > start_date)
+      start_mask = (graph_df['expiration_date'] > start_date)
       mask &= start_mask
 
     if end_date:
-      end_mask = (self.df['expiration_date'] < end_date)
+      end_mask = (graph_df['expiration_date'] < end_date)
       mask &= end_mask
 
-    self.graph_df = self.df[mask]
+    self.graph_df = graph_df[mask]
 
     if len(self.graph_df) == 0:
       raise ValueError(f'No eligible options for graph found.')
 
   def pprint(self):
     self.price_model.pprint()
-#    for e, t in sorted(set(zip(self.expiry_dates, target_strikes))):
-#      self._print(f'{e} target=${t:.2f}')
 
   def _print(self, s):
     text = f"{self.symbol}: {s}"
@@ -131,22 +137,29 @@ class DerivativeStrategy:
     latest_change = self.price_model.get_latest_change()
 
     rois = self.graph_df['yoy_roi']
-    expirations = self.graph_df['expiration_date'].dt.strftime(DATE_FORMAT)
+    expirations = self.graph_df['expiration_date']
     strikes = self.graph_df['strike']
     bids = self.graph_df['bid']
     deltas = self.graph_df['delta']
     target_strikes = self.graph_df[target_colname].round(2)
 
+    # Print target strikes.
+    for e, t in sorted(set(zip(expirations, target_strikes))):
+      tdte = calc_trading_dte(e)
+      self._print(f'{e.date()} ({tdte} trading days away) {target_colname}=${t:.2f}')
+
     # Graph of ROI vs Expirations.
     self._print(f'Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})')
-    ax.plot(expirations, rois)
-    for x, y, strike, bid, delta in zip(expirations, rois, strikes, bids, deltas):
-      label = f'K=\${strike}; \${bid} ({DELTA_UPPER}={round(delta, 2)})'
+    xs = expirations.dt.strftime(DATE_FORMAT)
+    ys = rois
+    ax.plot(xs, ys)
+    for x, y, strike, bid, delta in zip(xs, ys, strikes, bids, deltas):
+      label = f'K=\${strike}; \${bid} ({DELTA_UPPER}={delta:.2f})'
       ax.text(x, y, label, fontsize=8)#, ha='right', va='bottom')
 
     # Custom xticks.
-    xticks = expirations
-    xticklabels = [f'{e}\n(t=${t})' for e,t in zip(expirations, target_strikes)]
+    xticks = xs
+    xticklabels = [f'{e}\n(t=${t})' for e,t in zip(xs, target_strikes)]
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, rotation=30)
 
@@ -154,7 +167,7 @@ class DerivativeStrategy:
     ax.set_title(title)
 
     text = '\n'.join((
-      f'\${latest_price}, {round(latest_change * 100, 2)}%',
+      f'\${latest_price}, {latest_change * 100:.2f}%',
       f'Next earnings: {self.price_model.get_next_earnings_date().date()}',
       f'{MU}={mu * 100:.2f}%',
       f'{SIGMA_LOWER}={sigma * 100:.2f}%',

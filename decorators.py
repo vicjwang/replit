@@ -46,7 +46,7 @@ def graph(strategy_fn):
   return wrapped
 
 
-def cached(force_refresh=False):
+def cached(force_refresh=False, use_time=False):
   """
   A function that creates a decorator which will use "cache_filepath" for caching the results of the decorated function "fn".
   """
@@ -65,6 +65,9 @@ def cached(force_refresh=False):
       argstr = '_'.join([str(arg) for arg in args])
       kwstr = '_'.join([str(v) for v in kwargs.values()])
       filename_parts = [part for part in [fn.__name__, argstr, kwstr] if part]
+      if use_time:
+        now_timestr = datetime.now().strftime('%H%M')
+        filename_parts = [now_timestr, *filename_parts]
 
       cache_filename = '-'.join(filename_parts)
       cache_filepath = os.path.join(cache_dir, cache_filename)

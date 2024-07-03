@@ -4,6 +4,7 @@ import pandas as pd
 import requests
 import math
 import matplotlib.pyplot as plt
+import sys
 import traceback
 import yfinance as yf
 
@@ -13,7 +14,7 @@ from datetime import datetime
 from analysis.options import (
   find_worthy_contracts,
 )
-from analysis import strategy
+from analysis import strategy as Strategy
 from constants import (
   COVERED_CALLS,
   CSEPS,
@@ -72,11 +73,14 @@ def render_many(strategy):
       continue
 
   if not SHOW_GRAPHS or not strats:
-    raise RuntimeError('No graphs to render.')
+    raise RuntimeError(f'{symbol}: No graphs to render.')
 
   nrows = math.ceil(len(strats) / FIG_NCOLS)
   ncols = FIG_NCOLS
   fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
+
+  fig.canvas.manager.set_window_title(strategy.__name__)
+
   for i, strat in enumerate(strats):
 
     if nrows == 1 or ncols == 1:
@@ -99,6 +103,7 @@ def render_one(strategy):
   ncols = FIG_NCOLS
   nrows = 3
   fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
+  fig.canvas.manager.set_window_title(strategy.__name__)
 
   i = 0
   for zscore in [1, 0, -1]:
@@ -119,15 +124,25 @@ def render_one(strategy):
 
 
 if __name__ == '__main__':
+  strats = [
+#    Strategy.sell_short_term_derivatives, 
+    Strategy.sell_LTDITM_puts,
+  ]
 
-#  render_many(strategy.sell_short_term_derivatives)
-#  render_many(strategy.sell_LTDITM_puts)
+  graph_flag = False
+  for strat in strats:
+    try:
+      render_many(strat)
+      graph_flag = True
+    except Exception as e:
+      print(e)
+      continue
 
-#  render_one(strategy.sell_derivatives('NVDA'))
-  #render_one(strategy.sell_derivatives('MDB'))
-  render_one(strategy.sell_derivatives('MSTR'))
+#  render_one(Strategy.sell_derivatives('NVDA'))
+  #render_one(Strategy.sell_derivatives('MDB'))
+  #render_one(Strategy.sell_derivatives('MSTR'))
 
-  if SHOW_GRAPHS:
+  if SHOW_GRAPHS and graph_flag:
     print('Rendering plot in Output tab...')
     plt.tight_layout()
     plt.show()

@@ -27,7 +27,7 @@ from vendors.tradier import (
 )
 
 from utils import (
-  calc_trading_dte,
+  count_trading_days,
   calc_annual_roi,
 )
 
@@ -57,9 +57,9 @@ class DerivativeStrategy:
       if chain_df.empty:
         continue
 
-      tdte = calc_trading_dte(expiry_date)
+      trading_dte = count_trading_days(expiry_date)
       for zscore in sorted(PHI_ZSCORE.values()):
-        target_strike = self.price_model.predict_price(tdte, zscore)
+        target_strike = self.price_model.predict_price(trading_dte, zscore)
         colname = f"{zscore}_sigma_target"
         chain_df[colname] = target_strike
 
@@ -145,8 +145,8 @@ class DerivativeStrategy:
 
     # Print target strikes.
     for e, t in sorted(set(zip(expirations, target_strikes))):
-      tdte = calc_trading_dte(e)
-      self._print(f'{e.date()} ({tdte} trading days away) {target_colname}=${t:.2f}')
+      trading_dte = count_trading_days(e)
+      self._print(f'{e.date()} ({trading_dte} trading days away) {target_colname}=${t:.2f}')
 
     # Graph of ROI vs Expirations.
     self._print(f'Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})')

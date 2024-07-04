@@ -21,11 +21,7 @@ def is_market_hours():
   return now.weekday() in (0,1,2,3,4) and market_open <= now.time() <= market_close
 
 
-def calc_dte(expiry):
-  raise NotImplemented
-
-
-def calc_trading_dte(expiry_dt):
+def count_trading_days(expiry_dt):
   today = datetime.now()
   expiry_dt += timedelta(days=1)
 
@@ -44,33 +40,13 @@ def calc_annual_roi(contract) -> float:
   return annual_roi
 
 
-def get_option_contract_str(contract):
-  desc = contract['description']
-  last = contract['last']
-  annual_roi = round(contract['annual_roi']*100, 2)
-  theta = round(contract['greeks']['theta'], 4)
-  delta = round(contract['greeks']['delta'], 4)
-  gamma = round(contract['greeks']['gamma'], 4)
-  vega = round(contract['greeks']['vega'], 4)
-  iv = round(contract['greeks']['smv_vol'], 4)
-  return f"""{desc}:
-    last={last}
-    annual_roi={annual_roi}%
-    iv={iv}
-    delta={delta}
-    theta={theta}
-    gamma={gamma}
-    vega={vega}"""
-
-
 def printout(s=''):
   if not IS_VERBOSE:
     return
-
   print(s)
 
 
-def calc_expected_strike(current_price, mu, sigma, n, zscore):
+def calc_expected_price(current_price, mu, sigma, n, zscore):
   # Mean is linear with n.
   # Sigma is linear with sqrt(n).
   exp_strike = current_price * (1 + n*mu + zscore*math.sqrt(n)*sigma)
@@ -85,17 +61,3 @@ def read_earnings_dates_from_csv(symbol):
     dates = f.read().splitlines()
     return dates
 
-
-def count_trading_days(start_date, end_date):
-  # Ensure the dates are in the correct format
-  start_date = pd.to_datetime(start_date)
-  end_date = pd.to_datetime(end_date)
-
-  # Create a date range between the start and end dates
-  date_range = pd.date_range(start=start_date, end=end_date)
-
-  # Filter out only the weekdays (Monday to Friday)
-  weekdays = date_range[date_range.weekday < 5]
-
-  # Return the count of weekdays
-  return len(weekdays)

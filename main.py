@@ -11,9 +11,6 @@ import yfinance as yf
 from collections import defaultdict
 from datetime import datetime
 
-from analysis.options import (
-  find_worthy_contracts,
-)
 from analysis import strategy as Strategy
 from constants import (
   COVERED_CALLS,
@@ -73,7 +70,7 @@ def render_many(strategy):
       continue
 
   if not SHOW_GRAPHS or not strats:
-    raise RuntimeError(f'{symbol}: No graphs to render.')
+    raise RuntimeError(f"No graphs to render (SHOW_GRAPHS={SHOW_GRAPHS}).")
 
   nrows = math.ceil(len(strats) / FIG_NCOLS)
   ncols = FIG_NCOLS

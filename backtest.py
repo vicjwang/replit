@@ -6,7 +6,7 @@ import vectorbt as vbt
 
 from decorators import cached
 from utils import (
-  calc_expected_strike,
+  calc_expected_price,
 )
 from vendors.tradier import fetch_past_earnings_dates
 
@@ -17,7 +17,7 @@ def calc_historical_itm_proba(symbol, prices, mu, sigma, trading_days, zscore, c
   df = pd.DataFrame(prices)
   df['date'] = df['date']
   # Add column of expected price in n days.
-  df['expected_price'] = df.apply(lambda x: calc_expected_strike(x['close'], mu, sigma, 1, zscore), axis=1)
+  df['expected_price'] = df.apply(lambda x: calc_expected_price(x['close'], mu, sigma, 1, zscore), axis=1)
 
   # If start days is before earnings and n days later is after earnings, use None.
   df['expected_expiry'] = pd.to_datetime(df['date']) + pd.Timedelta(trading_days, unit='d')

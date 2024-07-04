@@ -17,6 +17,8 @@ from constants import (
   SIGMA_LOWER,
 )
 
+from utils import calc_expected_price
+
 
 class PriceModel:
   
@@ -68,7 +70,7 @@ class PriceModel:
     latest_price = self.get_latest_price()
     mu = self.get_daily_mean()
     sigma = self.get_daily_stdev()
-    target_price = latest_price * (1 + days*mu + zscore*math.sqrt(days)*sigma)
+    target_price = calc_expected_price(latest_price, mu, sigma, days, zscore)
     return target_price
 
   def pprint(self):

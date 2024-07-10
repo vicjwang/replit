@@ -146,10 +146,17 @@ class DerivativeStrategy:
     # Print target strikes.
     for e, t in sorted(set(zip(expirations, target_strikes))):
       trading_dte = count_trading_days(e)
-      self._print(f'{e.date()} ({trading_dte} trading days away) {target_colname}=${t:.2f}')
+      self._print(f"{e.date()} ({trading_dte} trading days away) {target_colname}=${t:.2f}")
+
+      try:
+        is_under = self.option_type == 'call'
+        accuracy = self.price_model.calc_intraquarter_predict_price_accuracy(trading_dte, zscore, is_under)
+        self._print(f"historical win rate for {trading_dte} trading days away={accuracy}")
+      except:
+        continue
 
     # Graph of ROI vs Expirations.
-    self._print(f'Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})')
+    self._print(f"Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})")
     xs = expirations.dt.strftime(DATE_FORMAT)
     ys = rois
     ax.plot(xs, ys)

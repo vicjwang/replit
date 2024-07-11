@@ -42,6 +42,9 @@ class DerivativeStrategy:
     self.expiry_dates = pd.to_datetime(fetch_options_expirations(symbol))
     self._load()
 
+  def __repr__(self):
+    return f"DerivativeStrategy(symbol={self.symbol}, side={self.side})"
+
   # TODO (vjw): use_cache from pkl?
   def _load(self, use_cache=True):
   
@@ -78,16 +81,12 @@ class DerivativeStrategy:
   def get_price_model(self):
     return self.price_model
 
-  def prepare_graph_data(self, option_type, zscore, start_date=None, end_date=None):
+  def prepare_graph_data(self, option_type, start_date=None, end_date=None):
 
     if option_type not in ('call', 'put'):
       raise ValueError("Invalid option_type: {option_type}")
 
     graph_df = self.df
-
-    # Capture 2 closest strikes.
-    target_colname = f"{zscore}_sigma_target"
-    graph_df = graph_df.groupby('expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])
 
     option_type_mask = (graph_df['option_type'] == option_type)
     self.option_type = option_type
@@ -112,7 +111,7 @@ class DerivativeStrategy:
     self.graph_df = graph_df[mask]
 
     if len(self.graph_df) == 0:
-      raise ValueError(f'No eligible options for graph found.')
+      raise ValueError(f"No eligible options for graph found (option_type={option_type}, start_date={start_date}, end_date={end_date}).")
 
   def pprint(self):
     self.price_model.pprint()
@@ -123,27 +122,34 @@ class DerivativeStrategy:
     return text
 
   def graph_roi_vs_expiry(self, ax, zscore=None):
+
     if zscore is None:
       zscore = WIN_PROBA_ZSCORE[self.side][self.option_type][MY_WIN_PROBA]
       win_proba = MY_WIN_PROBA
     else:
       win_proba = ZSCORE_WIN_PROBA[self.side][self.option_type][zscore]
 
+    # Capture closest strike.
     target_colname = f"{zscore}_sigma_target"
+    df = self.graph_df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:1]])
 
     mu = self.price_model.get_daily_mean()
     sigma = self.price_model.get_daily_stdev()
     latest_price = self.price_model.get_latest_price()
     latest_change = self.price_model.get_latest_change()
 
-    rois = self.graph_df['yoy_roi']
-    expirations = self.graph_df['expiration_date']
-    strikes = self.graph_df['strike']
-    bids = self.graph_df['bid']
-    deltas = self.graph_df['delta']
-    target_strikes = self.graph_df[target_colname].round(2)
+    rois = df['yoy_roi']
+    expirations = df['expiration_date']
+    strikes = df['strike']
+    bids = df['bid']
+    deltas = df['delta']
+    target_strikes = df[target_colname].round(2)
+
+    if len(expirations) == 0:
+      raise RuntimeError('No data to graph')
 
     # Print target strikes.
+    self.pprint()
     for e, t in sorted(set(zip(expirations, target_strikes))):
       trading_dte = count_trading_days(e)
       self._print(f"{e.date()} ({trading_dte} trading days away) {target_colname}=${t:.2f}")
@@ -151,12 +157,11 @@ class DerivativeStrategy:
       try:
         is_under = self.option_type == 'call'
         accuracy = self.price_model.calc_intraquarter_predict_price_accuracy(trading_dte, zscore, is_under)
-        self._print(f"historical win rate for {trading_dte} trading days away={accuracy}")
+        self._print(f" historical win rate for {trading_dte} trading days away={accuracy:.2f}")
       except:
         continue
 
     # Graph of ROI vs Expirations.
-    self._print(f"Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})")
     xs = expirations.dt.strftime(DATE_FORMAT)
     ys = rois
     ax.plot(xs, ys)
@@ -170,8 +175,9 @@ class DerivativeStrategy:
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, rotation=30)
 
-    title = self._print(f"{self.side.title()} {self.option_type.title()} Strikes @ Z-Score={zscore} ({win_proba}% Win Proba)")
+    title = f"{self.symbol}: {self.side.title()} {self.option_type.title()} Strikes @ Z-Score={zscore} ({win_proba}% Win Proba)"
     ax.set_title(title)
+    self._print(f"Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})\n \"{title}\"")
 
     text = '\n'.join((
       f'\${latest_price}, {latest_change * 100:.2f}%',
@@ -187,7 +193,7 @@ class DerivativeStrategy:
     ax.set_ylabel(ylabel)
 
 
-def sell_short_term_derivatives(symbol):
+def sell_intraquarter_derivatives(symbol):
   if symbol in COVERED_CALLS:
     option_type = 'call'
   elif symbol in CSEPS:
@@ -203,14 +209,12 @@ def sell_short_term_derivatives(symbol):
   latest_price = price_model.get_latest_price()
   latest_change = price_model.get_latest_change()
 
-  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
-
   if (option_type == 'call' and latest_change < 0) or (option_type == 'put' and latest_change > 0):
     raise ValueError(f'{symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
 
   next_earnings_date = price_model.get_next_earnings_date()
 
-  deriv_strat.prepare_graph_data(option_type, zscore, end_date=next_earnings_date)
+  deriv_strat.prepare_graph_data(option_type, end_date=next_earnings_date)
   return deriv_strat
 
 
@@ -218,10 +222,9 @@ def sell_LTDITM_puts(symbol):
   # Look at far away deep ITM Puts.
   side = SIDE_SHORT
   option_type = 'put'
-  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
 
   deriv_strat = DerivativeStrategy(symbol, side=side)
-  deriv_strat.prepare_graph_data(option_type, zscore, start_date=MIN_EXPIRY_DATESTR)
+  deriv_strat.prepare_graph_data(option_type, start_date=MIN_EXPIRY_DATESTR)
   return deriv_strat
 
 
@@ -229,16 +232,7 @@ def sell_LTDOTM_calls(symbol):
   # NOTE: YoY ROI generally not worth it (<.05)
   side = SIDE_SHORT
   option_type = 'call'
-  zscore = WIN_PROBA_ZSCORE[side][option_type][MY_WIN_PROBA]
 
   deriv_strat = DerivativeStrategy(symbol, side=side)
-  deriv_strat.prepare_graph_data(option_type, zscore, start_date=MIN_EXPIRY_DATESTR)
+  deriv_strat.prepare_graph_data(option_type, start_date=MIN_EXPIRY_DATESTR)
   return deriv_strat
-
-
-def sell_derivatives(symbol):
-  side = SIDE_SHORT
-
-  deriv_strat = DerivativeStrategy(symbol, side=side)
-  return deriv_strat
-

@@ -8,7 +8,7 @@ import sys
 import traceback
 import yfinance as yf
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from datetime import datetime
 
 from analysis import strategy as Strategy
@@ -20,6 +20,7 @@ from constants import (
   FIG_HEIGHT,
   FIG_NCOLS,
   IS_DEBUG,
+  SIDE_SHORT,
   SHOW_GRAPHS,
   TICKERS,
 )
@@ -29,9 +30,9 @@ def get_tickers():
   selected_tickers = defaultdict(
     bool,
     dict(
-      #**COVERED_CALLS,
+#      **COVERED_CALLS,
       #**CSEPS,
-      **TEST_SYMBOLS
+      **DD_SYMBOLS
       #**LTDITM_PUTS,
     )
   )
@@ -40,9 +41,11 @@ def get_tickers():
   return ret
 
 
-TEST_SYMBOLS = dict(
+DD_SYMBOLS = dict(
   NVDA=1,
-  MDB=1,
+  TSLA=1,
+#  MDB=1,
+#  V=1,
 #  CRWD=1,
 #  MSTR=1,
 #  SNAP=1,
@@ -50,97 +53,133 @@ TEST_SYMBOLS = dict(
 )
 
 
-def render_many(strategy):
-  # Run strategy across many tickers.
-
-  strats = []
+def scan(strategy, figman):
+  # Scan across many tickers.
+  # One figure will show same strategy across multiple tickers.
+  figman.add_empty_figure(strat.__name__)
 
   tickers = get_tickers()
   for ticker in tickers:
     symbol = ticker.symbol
 
     try:
-      strat = strategy(symbol)
-      strats.append(strat)
+      instance = strategy(symbol)
 
     except Exception as e:
-      print(f'{symbol}: Skipping - {e}')
+      print(f"{symbol}: Skipping - {e}")
       if IS_DEBUG:
         traceback.print_exc()
       continue
 
-  if not SHOW_GRAPHS or not strats:
-    raise RuntimeError(f"No graphs to render (SHOW_GRAPHS={SHOW_GRAPHS}).")
-
-  nrows = math.ceil(len(strats) / FIG_NCOLS)
-  ncols = FIG_NCOLS
-  fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
-
-  fig.canvas.manager.set_window_title(strategy.__name__)
-
-  for i, strat in enumerate(strats):
-
-    if nrows == 1 or ncols == 1:
-      ax = axes[i]
-    else:
-      row_index = i // 2
-      col_index = i % 2
-      ax = axes[row_index, col_index]
-
-    print()
-    strat.pprint()
-    strat.graph_roi_vs_expiry(ax)
-
-  fig.subplots_adjust()
+    figman.add_graph_as_ax(instance.graph_roi_vs_expiry)
 
 
-def render_one(strategy):
+def put_deep_dives(figman):
   # Run strategy on one ticker.
+  # One figure will show same strategy for one ticker.
 
-  ncols = FIG_NCOLS
-  nrows = 3
-  fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
-  fig.canvas.manager.set_window_title(strategy.__name__)
+  tickers = get_tickers()
+  for ticker in tickers:
+    symbol = ticker.symbol
+    if symbol not in CSEPS:
+      continue
 
-  i = 0
-  for zscore in [1, 0, -1]:
-    for option_type in ['call', 'put']:
+    zscores = [-1, -1.28, -1.645, -2.33]
+    deep_dive(symbol, 'put', zscores)
 
-      if nrows == 1 or ncols == 1:
-        ax = axes[i]
-      else:
-        row_index = i // 2
-        col_index = i % 2
-        ax = axes[row_index, col_index]
 
-      strategy.prepare_graph_data(option_type, zscore)
-      strategy.graph_roi_vs_expiry(ax, zscore)
-      i += 1
+def call_deep_dives(figman):
+  tickers = get_tickers()
+  for ticker in tickers:
+    symbol = ticker.symbol
+    if symbol not in COVERED_CALLS:
+      continue
 
-  fig.subplots_adjust()
+    zscores = [0, 1, 1.28, 1.645, 2.33]
+    deep_dive(symbol, 'call', zscores)
+
+
+def deep_dive(symbol, option_type, zscores):
+
+  figman.add_empty_figure(f"{symbol}: {option_type}")
+
+  instance = Strategy.DerivativeStrategy(symbol, side=SIDE_SHORT)
+
+  for zscore in zscores:
+    try:
+      instance.prepare_graph_data(option_type)
+      figman.add_graph_as_ax(instance.graph_roi_vs_expiry, zscore)
+
+    except Exception as e:
+      print(f"{instance}: Skipping - {e}")
+      if IS_DEBUG:
+        traceback.print_exc()
+      continue
+
+
+class FigureManager:
+  
+  def __init__(self):
+    self.figures = OrderedDict()
+    self.current_figure = None
+
+  def add_graph_as_ax(self, graph_fn, *args):
+    self.current_figure.append((graph_fn, args))
+
+  def add_empty_figure(self, title):
+    self.figures[title] = []
+    self.current_figure = self.figures[title]
+
+  def render(self):
+    
+    if not SHOW_GRAPHS:
+      print(f"No graphs to render (SHOW_GRAPHS={SHOW_GRAPHS}).")
+      return
+
+    for fig_title, graphs in self.figures.items():
+      if len(graphs) == 0:
+        print('Skipping', fig_title, '- no graphs to render.')
+        continue
+      
+      nrows = math.ceil(len(graphs) / FIG_NCOLS)
+      ncols = FIG_NCOLS
+      fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
+
+      fig.canvas.manager.set_window_title(fig_title)
+
+      for i, graph in enumerate(graphs):
+        graph_fn, args = graph
+
+        if nrows == 1 or ncols == 1:
+          ax = axes[i]
+        else:
+          row_index = i // 2
+          col_index = i % 2
+          ax = axes[row_index, col_index]
+
+        print()
+        graph_fn(ax, *args)
+
+      fig.subplots_adjust()
+      plt.tight_layout()
+
+    print('Rendering in Output tab...')
+    plt.show()
 
 
 if __name__ == '__main__':
+
+  figman = FigureManager()
+
+  # Scan across tickers with strategies.
   strats = [
-#    Strategy.sell_short_term_derivatives, 
-    Strategy.sell_LTDITM_puts,
+    Strategy.sell_intraquarter_derivatives,
+#    Strategy.sell_LTDITM_puts,
   ]
-
-  graph_flag = False
   for strat in strats:
-    try:
-      render_many(strat)
-      graph_flag = True
-    except Exception as e:
-      print(e)
-      continue
+    scan(strat, figman)
 
-#  render_one(Strategy.sell_derivatives('NVDA'))
-  #render_one(Strategy.sell_derivatives('MDB'))
-  #render_one(Strategy.sell_derivatives('MSTR'))
+  #put_deep_dives(figman)
+  #call_deep_dives(figman)
 
-  if SHOW_GRAPHS and graph_flag:
-    print('Rendering plot in Output tab...')
-    plt.tight_layout()
-    plt.show()
-  
+  figman.render()

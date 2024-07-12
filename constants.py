@@ -65,55 +65,56 @@ MU = '\u03BC'
 
 SIDE_SHORT = 'short'
 
-Ticker = namedtuple('Ticker', ['symbol', 'name', 'next_earnings'], defaults=(None, None, None))
+Stock = namedtuple('Stock', ['symbol', 'name', 'next_earnings'], defaults=(None, None, None))
 
-TICKERS = [
-  Ticker('AAPL', name='Apple Inc.', next_earnings='2024-07-26'),
-  Ticker(symbol='ABNB', name='Airbnb', next_earnings='2024-08-01'),
-  Ticker(symbol='AMZN', name='amazon', next_earnings='2024-08-01'),
-  Ticker(symbol='BRK/B', name='berkshire'),
-  Ticker('CRM', name='Salesforce'),
-  Ticker(symbol='CRWD', name='crowdstrike', next_earnings='2024-06-04'),
-  Ticker(symbol='DIS', name='disney', next_earnings='2024-08-14'),
-  Ticker(symbol='DDOG', name='datadog', next_earnings='2024-08-07'),
-  Ticker(symbol='GOOG', name='google', next_earnings='2024-07-23'),
-  Ticker(symbol='HTZ', name='hertz'),
-  Ticker(symbol='META', name='facebook', next_earnings='2024-07-24'),
-  Ticker(symbol='MDB', name='mongodb', next_earnings='2024-08-30'),
-  Ticker(symbol='MSFT', name='microsoft', next_earnings='2024-07-22'),
-  Ticker(symbol='MSTR', name='Microstrategy', next_earnings='2024-07-30'),
-  Ticker(symbol='NET', name='Cloudflare', next_earnings='2024-08-01'),
-  Ticker(symbol='NVDA', name='nvidia', next_earnings='2024-08-21'),
-  Ticker(symbol='OKTA', name='okta', next_earnings='2024-08-29'),
-  Ticker(symbol='SHOP', name='Shopify', next_earnings='2024-08-07'),
-  Ticker(symbol='SNAP', name='snapchat', next_earnings='2024-07-23'),
-  Ticker(symbol='SQ', name='Square'),
-  Ticker(symbol='SVOL', name='SVOL'),
-  Ticker(symbol='TSLA', name='tesla', next_earnings='2024-07-16'),
-  Ticker(symbol='TWLO', name='twilio', next_earnings='2024-08-13'),
-  Ticker(symbol='TSM', name='TSM', next_earnings='2024-07-18'),
-  Ticker(symbol='TXN', name='Texas Instruments', next_earnings='2024-07-23'),
-  #Ticker(symbol='GME', name='Gamestop'),
+STOCKS = [
+  Stock('AAPL', name='Apple Inc.', next_earnings='2024-07-26'),
+  Stock(symbol='ABNB', name='Airbnb', next_earnings='2024-08-01'),
+  Stock(symbol='AMZN', name='amazon', next_earnings='2024-08-01'),
+  Stock(symbol='BRK/B', name='berkshire'),
+  Stock('CRM', name='Salesforce'),
+  Stock(symbol='CRWD', name='crowdstrike', next_earnings='2024-06-04'),
+  Stock(symbol='DIS', name='disney', next_earnings='2024-08-14'),
+  Stock(symbol='DDOG', name='datadog', next_earnings='2024-08-07'),
+  Stock(symbol='GOOG', name='google', next_earnings='2024-07-23'),
+  Stock(symbol='HTZ', name='hertz'),
+  Stock(symbol='META', name='facebook', next_earnings='2024-07-24'),
+  Stock(symbol='MDB', name='mongodb', next_earnings='2024-08-30'),
+  Stock(symbol='MSFT', name='microsoft', next_earnings='2024-07-22'),
+  Stock(symbol='MSTR', name='Microstrategy', next_earnings='2024-07-30'),
+  Stock(symbol='NET', name='Cloudflare', next_earnings='2024-08-01'),
+  Stock(symbol='NVDA', name='nvidia', next_earnings='2024-08-21'),
+  Stock(symbol='OKTA', name='okta', next_earnings='2024-08-29'),
+  Stock(symbol='SHOP', name='Shopify', next_earnings='2024-08-07'),
+  Stock(symbol='SNAP', name='snapchat', next_earnings='2024-07-23'),
+  Stock(symbol='SQ', name='Square'),
+  Stock(symbol='SVOL', name='SVOL'),
+  Stock(symbol='TSLA', name='tesla', next_earnings='2024-07-16'),
+  Stock(symbol='TWLO', name='twilio', next_earnings='2024-08-13'),
+  Stock(symbol='TSM', name='TSM', next_earnings='2024-07-18'),
+  Stock(symbol='TXN', name='Texas Instruments', next_earnings='2024-07-23'),
+  Stock(symbol='V', name='Visa'),
+  #Stock(symbol='GME', name='Gamestop'),
 ]
 
 COVERED_CALLS = dict(
-  DDOG=1,  # cc
   DIS=1,  # cc
   OKTA=1,  # cc
-  MDB=1,  # cc
   SNAP=1,  # cc
   TWLO=1,  # cc
 )
 
-CSEPS = dict(
+WATCHLIST = dict(
   AAPL=1,
   ABNB=1,
   AMZN=1,
   CRM=1,
   CRWD=1,
+  DDOG=1,  # cc
   GOOG=1,
-  META=1,
   GME=1,
+  META=1,
+  MDB=1,  # cc
   MSFT=1,
   MSTR=1,
   NVDA=1,
@@ -122,17 +123,7 @@ CSEPS = dict(
   TSLA=1,
   TSM=1,
   TXN=1,
-)
-
-LTDITM_PUTS = dict(
-  MDB=1,  # cc
-  SNAP=1,  # cc
-  MSTR=1,
-  AMZN=1,
-  TSLA=1,
-  TSM=1,
-  TXN=1,
-  NVDA=1,
+  V=1,
 )
 
 DATE_FORMAT = '%Y-%m-%d'

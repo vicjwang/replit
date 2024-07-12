@@ -8,7 +8,21 @@ import subprocess
 from datetime import datetime, timedelta, time
 from constants import (
   IS_VERBOSE, USE_EARNINGS_CSV, START_DATE, DATE_FORMAT,
+  ZSCORE_WIN_PROBA,
 )
+
+
+def strformat(symbol, s):
+    text = f"{symbol}: {s}"
+    return text
+
+
+def get_win_proba(side, option_type, zscore):
+  return ZSCORE_WIN_PROBA[side][option_type][zscore]
+
+
+def get_target_colname(zscore):
+  return f"{zscore}_sigma_target"
 
 
 def is_market_hours():

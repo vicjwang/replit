@@ -1,3 +1,4 @@
+import argparse
 import os
 import pickle
 import pandas as pd
@@ -14,84 +15,79 @@ from datetime import datetime
 from analysis import strategy as Strategy
 from constants import (
   COVERED_CALLS,
-  CSEPS,
-  LTDITM_PUTS,
+  WATCHLIST,
   FIG_WIDTH,
   FIG_HEIGHT,
   FIG_NCOLS,
   IS_DEBUG,
   SIDE_SHORT,
   SHOW_GRAPHS,
-  TICKERS,
+  STOCKS,
+  WORTHY_MIN_BID,
+  WORTHY_MIN_ROI,
 )
 
+from utils import strformat
 
-def get_tickers():
-  selected_tickers = defaultdict(
-    bool,
-    dict(
-#      **COVERED_CALLS,
-      #**CSEPS,
-      **DD_SYMBOLS
-      #**LTDITM_PUTS,
+
+def get_stocks(tickers=None):
+  
+  if tickers:
+    selected = defaultdict(bool, dict(zip(tickers, [1]*len(tickers))))
+  else:
+    selected = defaultdict(
+      bool,
+      dict(
+        **COVERED_CALLS,
+        **WATCHLIST,
+      )
     )
-  )
 
-  ret = sorted([ticker for ticker in TICKERS if selected_tickers[ticker.symbol] == 1], key=lambda t: t.symbol)
+  ret = sorted([stock for stock in STOCKS if selected[stock.symbol] == 1], key=lambda t: t.symbol)
   return ret
 
 
-DD_SYMBOLS = dict(
-  NVDA=1,
-  TSLA=1,
-#  MDB=1,
-#  V=1,
-#  CRWD=1,
-#  MSTR=1,
-#  SNAP=1,
-#  TWLO=1,
-)
-
-
-def scan(strategy, figman):
-  # Scan across many tickers.
-  # One figure will show same strategy across multiple tickers.
+def scan(snapshot_fn, tickers, figman):
+  # Scan across many stocks.
+  # One figure will show same strategy across multiple stocks.
   figman.add_empty_figure(strat.__name__)
 
-  tickers = get_tickers()
-  for ticker in tickers:
-    symbol = ticker.symbol
+  stocks = get_stocks(tickers)
+
+  for stock in stocks:
+    symbol = stock.symbol
 
     try:
-      instance = strategy(symbol)
+      snapshot = snapshot_fn(symbol)
 
     except Exception as e:
-      print(f"{symbol}: Skipping - {e}")
+      print(strformat(symbol, f"Skipping - {e}"))
       if IS_DEBUG:
         traceback.print_exc()
       continue
 
-    figman.add_graph_as_ax(instance.graph_roi_vs_expiry)
+    figman.add_graph_as_ax(snapshot.graph_roi_vs_expiry)
+    print(strformat(symbol, f"Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})\n \"{snapshot.title}\"\n"))
 
 
-def put_deep_dives(figman):
-  # Run strategy on one ticker.
-  # One figure will show same strategy for one ticker.
+def deep_dive_puts(tickers, figman):
+  # Run strategy on one stock.
+  # One figure will show same strategy for one stock.
 
-  tickers = get_tickers()
-  for ticker in tickers:
-    symbol = ticker.symbol
-    if symbol not in CSEPS:
-      continue
+  stocks = get_stocks(tickers)
+  for stock in stocks:
+    symbol = stock.symbol
+    strat = Strategy.DerivativeStrategyBase(symbol, side=SIDE_SHORT)
+    print(strat)
 
     zscores = [-1, -1.28, -1.645, -2.33]
-    deep_dive(symbol, 'put', zscores)
+    deep_dive(strat, 'put', zscores)
 
 
-def call_deep_dives(figman):
-  tickers = get_tickers()
-  for ticker in tickers:
-    symbol = ticker.symbol
+def deep_dive_calls(tickers, figman):
+  stocks = get_stocks(tickers)
+  for stock in stocks:
+    symbol = stock.symbol
     if symbol not in COVERED_CALLS:
       continue
 
@@ -99,22 +95,23 @@ def call_deep_dives(figman):
     deep_dive(symbol, 'call', zscores)
 
 
-def deep_dive(symbol, option_type, zscores):
+def deep_dive(strategy, option_type, zscores):
 
-  figman.add_empty_figure(f"{symbol}: {option_type}")
-
-  instance = Strategy.DerivativeStrategy(symbol, side=SIDE_SHORT)
+  symbol = strategy.symbol
+  figman.add_empty_figure(strformat(symbol, option_type))
 
   for zscore in zscores:
     try:
-      instance.prepare_graph_data(option_type)
-      figman.add_graph_as_ax(instance.graph_roi_vs_expiry, zscore)
+      snapshot = strategy.build_snapshot(option_type, zscore=zscore)
+      figman.add_graph_as_ax(snapshot.graph_roi_vs_expiry)
+      print(strformat(symbol, f"Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})\n \"{snapshot.title}\""))
 
     except Exception as e:
-      print(f"{instance}: Skipping - {e}")
+      print(strformat(symbol, f"Skipping - {e}"))
       if IS_DEBUG:
         traceback.print_exc()
       continue
+  print()
 
 
 class FigureManager:
@@ -123,8 +120,8 @@ class FigureManager:
     self.figures = OrderedDict()
     self.current_figure = None
 
-  def add_graph_as_ax(self, graph_fn, *args):
-    self.current_figure.append((graph_fn, args))
+  def add_graph_as_ax(self, graph_fn, *args, **kwargs):
+    self.current_figure.append((graph_fn, args, kwargs))
 
   def add_empty_figure(self, title):
     self.figures[title] = []
@@ -148,7 +145,7 @@ class FigureManager:
       fig.canvas.manager.set_window_title(fig_title)
 
       for i, graph in enumerate(graphs):
-        graph_fn, args = graph
+        graph_fn, args, kwargs = graph
 
         if nrows == 1 or ncols == 1:
           ax = axes[i]
@@ -158,7 +155,7 @@ class FigureManager:
           ax = axes[row_index, col_index]
 
         print()
-        graph_fn(ax, *args)
+        graph_fn(ax, *args, **kwargs)
 
       fig.subplots_adjust()
       plt.tight_layout()
@@ -169,17 +166,54 @@ class FigureManager:
 
 if __name__ == '__main__':
 
+  parser = argparse.ArgumentParser()
+  parser.add_argument('command')
+  parser.add_argument('-t', '--tickers')
+  parser.add_argument('-s', '--strategy')
+
+  args = parser.parse_args()
+
+  cmd = args.command
+  tickers = args.tickers.upper().split(',') if args.tickers else None
+  strategy_input = args.strategy
+
   figman = FigureManager()
 
-  # Scan across tickers with strategies.
-  strats = [
-    Strategy.sell_intraquarter_derivatives,
-#    Strategy.sell_LTDITM_puts,
-  ]
-  for strat in strats:
-    scan(strat, figman)
+  # Scan across stocks with strategies.
+  if cmd == 'scan':
+    scan_strats = [
+      Strategy.sell_intraquarter_derivatives,
+      Strategy.sell_LTDITM_puts,
+    ]
 
-  #put_deep_dives(figman)
-  #call_deep_dives(figman)
+    if strategy_input is None:
+      for strat in scan_strats:
+        scan(strat, tickers, figman)
+    elif strategy_input.isdigit():
+      strat = scan_strats[int(strategy_input)]
+      scan(strat, tickers, figman)
+    else:
+      print(f"Invalid strategy:", ' '.join([f"{i}={strat.__name__}" for i, strat in enumerate(scan_strats)]))
+      sys.exit(1)
+
+  elif cmd == 'dd':
+    strats = [
+      deep_dive_calls,
+      deep_dive_puts,
+    ]
+
+    if strategy_input is None:
+      for strat in strats:
+        strat(tickers, figman)
+    elif strategy_input.isdigit():
+      strat = strats[int(strategy_input)]
+      strat(tickers, figman)
+    else:
+      print(f"Invalid strategy:", ' '.join([f"{i}={strat.__name__}" for i, strat in enumerate(strats)]))
+      sys.exit(1)
+
+  else:
+    print(f"Invalid command - either 'scan' or 'dd'")
+    sys.exit(1)
 
   figman.render()

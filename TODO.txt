@@ -1,1 +1,7 @@
-- CSEP model
+
+Usage:
+"Scan all notable tickers for intraquarter options"
+$ poetry run python main.py scan -s 0
+
+"Deep dive on MDB and NVDA for puts only"
+$ poetry run python main.py dd -t mdb,nvda -s 1

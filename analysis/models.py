@@ -20,7 +20,7 @@ from constants import (
   SIGMA_LOWER,
 )
 
-from utils import calc_expected_price
+from utils import calc_expected_price, strformat
 
 
 class PriceModel:
@@ -77,17 +77,15 @@ class PriceModel:
     target_price = calc_expected_price(from_price, mu, sigma, days, zscore)
     return target_price
 
-  def pprint(self):
+  def __str__(self):
     latest_price = self.get_latest_price() 
     latest_change = self.get_latest_change()
-    self.format_print(f"${latest_price}, {round(latest_change * 100, 2)}%")
-    self.format_print(f"{MU}={self.daily_mean:.4f} {SIGMA_LOWER}={self.daily_stdev:.4f}")
-    self.format_print(f"Next earnings={self.next_earnings_date.strftime(DATE_FORMAT)}")
-
-  def format_print(self, s):
-    ret = f"{self.symbol}: {s}"
-    print(ret)
-    return ret
+    s = '\n'.join([
+      strformat(self.symbol, f"${latest_price}, {round(latest_change * 100, 2)}%"),
+      strformat(self.symbol, f"{MU}={self.daily_mean:.4f} {SIGMA_LOWER}={self.daily_stdev:.4f}"),
+      strformat(self.symbol, f"Next earnings={self.next_earnings_date.strftime(DATE_FORMAT)}"),
+    ])
+    return s
 
   def graph_historical_returns(self, periods):
     graph_df = self.prices_df[self.avoid_earnings_mask]
@@ -164,7 +162,6 @@ class PriceModel:
 if __name__ == '__main__':
 
   model = PriceModel('NVDA')
-  model.pprint()
   model.graph_intraquarter_returns(20, fig_num=1)
   model.calc_intraquarter_predict_price_accuracy(20, 1)
 #  model.graph_intraquarter_returns(30, fig_num=2)

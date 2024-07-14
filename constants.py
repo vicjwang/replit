@@ -12,8 +12,9 @@ SHOULD_AVOID_EARNINGS = True
 MIN_EXPIRY_DATESTR = '2025-01-01'
 USE_EARNINGS_CSV = False
 
-WORTHY_MIN_BID = 0.5
+WORTHY_MIN_BID = 0.8
 WORTHY_MIN_ROI = 0.2
+MAX_STRIKE = 280
 
 PHI_ZSCORE = {
   # Includes entire left tail aka values directly taken from Standard Normal Table.

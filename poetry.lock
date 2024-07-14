@@ -928,6 +928,22 @@ files = [
 traitlets = "*"
 
 [[package]]
+name = "mplcursors"
+version = "0.5.3"
+description = "Interactive data selection cursors for Matplotlib."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "mplcursors-0.5.3.tar.gz", hash = "sha256:cb220c8dffaafde195e138faec5654737267f7685d1f0503618cdc333aca0966"},
+]
+
+[package.dependencies]
+matplotlib = ">=3.1,<3.7.1 || >3.7.1"
+
+[package.extras]
+docs = ["pandas", "pydata_sphinx_theme (!=0.10.1)", "sphinx", "sphinx-gallery"]
+
+[[package]]
 name = "multitasking"
 version = "0.0.11"
 description = "Non-blocking Python methods using decorators"
@@ -1855,4 +1871,4 @@ requests = ">=2.31"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.11"
-content-hash = "7add2909762d48b62a62437440117de273df19f92dd79a1cbf97177161669444"
+content-hash = "5141fe4e9276b358e23a1eca7754504bc5ae04a4c6d3cff90a4762557573eab7"

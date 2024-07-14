@@ -1,3 +1,5 @@
+import mplcursors
+import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
 import sys
@@ -13,6 +15,7 @@ from constants import (
   MU,
   SIDE_SHORT,
   SIGMA_LOWER,
+  MAX_STRIKE,
   MY_WIN_PROBA,
   WIN_PROBA_ZSCORE,
   WORTHY_MIN_BID,
@@ -35,7 +38,7 @@ from utils import (
 
 class DerivativeStrategySnapshot:
   
-  def __init__(self, symbol, df, side, option_type, zscore, title=None, text=None):
+  def __init__(self, symbol, df, side, option_type, zscore, title=None, text=None, next_earnings=None):
     self.symbol = symbol
     self.df = df
     self.title = title
@@ -43,6 +46,7 @@ class DerivativeStrategySnapshot:
     self.side = side
     self.option_type = option_type
     self.zscore = zscore
+    self.next_earnings = next_earnings
 
   def graph_roi_vs_expiry(self, ax):
     target_colname = get_target_colname(self.zscore)
@@ -58,6 +62,7 @@ class DerivativeStrategySnapshot:
       raise RuntimeError('No data to graph')
 
     """
+    # TODO(vjw): cleanup?
     # Print target strikes.
     for e, t in sorted(set(zip(expirations, target_strikes))):
       trading_dte = count_trading_days(e)
@@ -72,18 +77,63 @@ class DerivativeStrategySnapshot:
     """
 
     # Graph of ROI vs Expirations.
-    xs = expirations.dt.strftime(DATE_FORMAT)
+    xs = pd.to_datetime(expirations)
     ys = rois
-    ax.plot(xs, ys)
+    ax.plot(xs, ys, linestyle='-', marker='o')
+    scatter = ax.scatter(xs, ys)
     for x, y, strike, bid, delta in zip(xs, ys, strikes, bids, deltas):
       label = f'K=\${strike}; \${bid} ({DELTA_UPPER}={delta:.2f})'
       ax.text(x, y, label, fontsize=8)#, ha='right', va='bottom')
 
     # Custom xticks.
     xticks = xs
-    xticklabels = [f'{e}\n(t=${t})' for e,t in zip(xs, target_strikes)]
+    xticklabels = [f'{e.strftime(DATE_FORMAT)}\n(t=${t})' for e,t in zip(xs, target_strikes)]
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, rotation=30)
+
+    cursor = mplcursors.cursor(scatter, hover=True)
+
+    vols = self.df['smv_vol']
+    volumes = self.df['volume']
+    thetas = self.df['theta']
+    gammas = self.df['gamma']
+    vegas = self.df['vega']
+    tooltip_map = dict()
+    for i, expiry in enumerate(xs):
+      expiry_at = expiry.strftime(DATE_FORMAT)
+      target_strike = target_strikes.iloc[i]
+      strike = strikes.iloc[i]
+      bid = bids.iloc[i]
+      volume = volumes.iloc[i]
+      vol = vols.iloc[i].round(4)
+      delta = deltas.iloc[i].round(4)
+      theta = thetas.iloc[i].round(4)
+      gamma = gammas.iloc[i].round(4)
+      vega = vegas.iloc[i].round(4)
+      tooltip_map[expiry_at] = (target_strike, strike, bid, volume, vol, delta, theta, gamma, vega)
+
+    @cursor.connect('add')
+    def on_add(sel):
+      expiry_at = mdates.num2date(sel.target[0]).strftime(DATE_FORMAT)
+      roi = sel.target[1]
+      target_strike, strike, bid, volume, vol, delta, theta, gamma, vega = tooltip_map[expiry_at]
+      text = '\n'.join([
+        f"expiry={expiry_at}",
+        f"target=${target_strike}",
+        f"strike=${strike}",
+        f"bid=${bid}",
+        f"volume={volume}",
+        f"vol={vol}",
+        f"delta={delta}",
+        f"theta={theta}",
+        f"gamma={gamma}",
+        f"vega={vega}"
+      ])
+
+      sel.annotation.set(text=text)
+    
+    yticks = [i/10 for i in range(2, 10)]
+    ax.set_yticks(yticks)
 
     win_proba = get_win_proba(self.side, self.option_type, self.zscore)
     ax.set_title(self.title)
@@ -95,6 +145,7 @@ class DerivativeStrategySnapshot:
     ylabel= 'ROI (YoY)'
     ax.set_ylabel(ylabel)
 
+    ax.axvline(x=self.next_earnings, color='b')
 
 
 class DerivativeStrategyBase:
@@ -164,6 +215,8 @@ class DerivativeStrategyBase:
     target_colname = get_target_colname(zscore)
     graph_df = self.df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])
 
+    strike_mask = (graph_df['strike'] < MAX_STRIKE)
+
     option_type_mask = (graph_df['option_type'] == option_type)
 
     # ROI needs to be worth it plus ROI becomes linear when too itm so remove.
@@ -173,7 +226,7 @@ class DerivativeStrategyBase:
     # Cash needs to be worth it per contract.
     cash_mask = (graph_df['bid'] > WORTHY_MIN_BID) 
 
-    mask = option_type_mask & cash_mask & roi_mask & otm_only_mask
+    mask = option_type_mask & strike_mask & cash_mask & roi_mask & otm_only_mask
 
     if expiry_after:
       start_mask = (graph_df['expiration_date'] > expiry_after)
@@ -192,16 +245,17 @@ class DerivativeStrategyBase:
     sigma = self.price_model.get_daily_stdev()
     latest_price = self.price_model.get_latest_price()
     latest_change = self.price_model.get_latest_change()
+    next_earnings = self.price_model.get_next_earnings_date()
 
     title = f"{self.symbol}: {self.side.title()} {option_type.title()} Strikes @ Z-Score={zscore} ({win_proba}% Win Proba)"
     text = '\n'.join((
       f'\${latest_price}, {latest_change * 100:.2f}%',
-      f'Next earnings: {self.price_model.get_next_earnings_date().date()}',
+      f'Next earnings: {next_earnings.strftime(DATE_FORMAT)}',
       f'{MU}={mu * 100:.2f}%',
       f'{SIGMA_LOWER}={sigma * 100:.2f}%',
     ))
     return DerivativeStrategySnapshot(self.symbol, graph_df, self.side, option_type,
-                                      zscore, title=title, text=text)
+                                      zscore, title=title, text=text, next_earnings=next_earnings)
 
 
 def sell_intraquarter_derivatives(symbol):

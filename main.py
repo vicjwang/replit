@@ -39,7 +39,7 @@ def get_stocks(tickers=None):
 def scan(snapshot_fn, tickers, figman):
   # Scan across many stocks.
   # One figure will show same strategy across multiple stocks.
-  figman.add_empty_figure(strat.__name__)
+  figman.add_empty_figure(snapshot_fn.__name__)
 
   stocks = get_stocks(tickers)
 
@@ -70,7 +70,7 @@ def deep_dive_puts(tickers, figman):
     print(strat)
 
     zscores = [-1, -1.28, -1.645, -2.33]
-    deep_dive(strat, 'put', zscores)
+    deep_dive(strat, 'put', zscores, figman)
 
 
 def deep_dive_calls(tickers, figman):
@@ -81,10 +81,10 @@ def deep_dive_calls(tickers, figman):
       continue
 
     zscores = [0, 1, 1.28, 1.645, 2.33]
-    deep_dive(symbol, 'call', zscores)
+    deep_dive(symbol, 'call', zscores, figman)
 
 
-def deep_dive(strategy, option_type, zscores):
+def deep_dive(strategy, option_type, zscores, figman):
 
   symbol = strategy.symbol
   figman.add_empty_figure(strformat(symbol, option_type))

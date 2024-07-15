@@ -1,9 +1,11 @@
 import math
 import matplotlib.pyplot as plt
+import os
 
 from collections import OrderedDict
 
 from constants import (
+  ENV,
   FIG_WIDTH,
   FIG_HEIGHT,
   FIG_NCOLS,
@@ -26,8 +28,8 @@ class FigureManager:
 
   def render(self):
     
-    if not SHOW_GRAPHS:
-      print(f"No graphs to render (SHOW_GRAPHS={SHOW_GRAPHS}).")
+    if SHOW_GRAPHS is False:
+      print(f"Disabled render (SHOW_GRAPHS={SHOW_GRAPHS}).")
       return
 
     for fig_title, graphs in self.figures.items():
@@ -58,4 +60,5 @@ class FigureManager:
       plt.tight_layout()
 
     print('Rendering in Output tab...')
-    plt.show()
+    if ENV != 'test':
+      plt.show()

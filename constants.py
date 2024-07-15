@@ -1,3 +1,4 @@
+import os
 from collections import namedtuple
 
 
@@ -11,6 +12,7 @@ START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
 MIN_EXPIRY_DATESTR = '2025-01-01'
 USE_EARNINGS_CSV = False
+ENV = os.environ.get('ENV') or 'dev'
 
 WORTHY_MIN_BID = 0.8
 WORTHY_MIN_ROI = 0.2

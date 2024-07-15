@@ -1,31 +1,20 @@
 import argparse
-import os
-import pickle
-import pandas as pd
-import requests
-import math
-import matplotlib.pyplot as plt
 import sys
 import traceback
-import yfinance as yf
 
-from collections import defaultdict, OrderedDict
-from datetime import datetime
+from collections import defaultdict
 
 from analysis import strategy as Strategy
 from constants import (
   COVERED_CALLS,
   WATCHLIST,
-  FIG_WIDTH,
-  FIG_HEIGHT,
-  FIG_NCOLS,
   IS_DEBUG,
   SIDE_SHORT,
-  SHOW_GRAPHS,
   STOCKS,
   WORTHY_MIN_BID,
   WORTHY_MIN_ROI,
 )
+from graphing import FigureManager
 
 from utils import strformat
 
@@ -112,56 +101,6 @@ def deep_dive(strategy, option_type, zscores):
         traceback.print_exc()
       continue
   print()
-
-
-class FigureManager:
-  
-  def __init__(self):
-    self.figures = OrderedDict()
-    self.current_figure = None
-
-  def add_graph_as_ax(self, graph_fn, *args, **kwargs):
-    self.current_figure.append((graph_fn, args, kwargs))
-
-  def add_empty_figure(self, title):
-    self.figures[title] = []
-    self.current_figure = self.figures[title]
-
-  def render(self):
-    
-    if not SHOW_GRAPHS:
-      print(f"No graphs to render (SHOW_GRAPHS={SHOW_GRAPHS}).")
-      return
-
-    for fig_title, graphs in self.figures.items():
-      if len(graphs) == 0:
-        print('Skipping', fig_title, '- no graphs to render.')
-        continue
-      
-      nrows = math.ceil(len(graphs) / FIG_NCOLS)
-      ncols = FIG_NCOLS
-      fig, axes = plt.subplots(nrows, ncols, figsize=(FIG_WIDTH, FIG_HEIGHT))
-
-      fig.canvas.manager.set_window_title(fig_title)
-
-      for i, graph in enumerate(graphs):
-        graph_fn, args, kwargs = graph
-
-        if nrows == 1 or ncols == 1:
-          ax = axes[i]
-        else:
-          row_index = i // 2
-          col_index = i % 2
-          ax = axes[row_index, col_index]
-
-        print()
-        graph_fn(ax, *args, **kwargs)
-
-      fig.subplots_adjust()
-      plt.tight_layout()
-
-    print('Rendering in Output tab...')
-    plt.show()
 
 
 if __name__ == '__main__':

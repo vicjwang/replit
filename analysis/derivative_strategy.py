@@ -51,7 +51,6 @@ class DerivativeStrategyBase:
   def __str__(self):
     return str(self.price_model)
 
-  # TODO (vjw): use_cache from pkl?
   def _load(self, use_cache=True):
   
     self.df = None
@@ -86,6 +85,7 @@ class DerivativeStrategyBase:
     self.df = pd.concat([self.df.drop(columns=['greeks']), greeks], axis=1)
 
     self.df['yoy_roi'] = self.df.apply(calc_annual_roi, axis=1)
+    self.df['expiration_date'] = pd.to_datetime(self.df['expiration_date'])
 
   # TODO (vjw): use @property?
   def get_price_model(self):
@@ -122,7 +122,7 @@ class DerivativeStrategyBase:
     if expiry_after:
       start_mask = (graph_df['expiration_date'] > expiry_after)
       mask &= start_mask
-
+    
     if expiry_before:
       end_mask = (graph_df['expiration_date'] < expiry_before)
       mask &= end_mask

@@ -69,7 +69,7 @@ def cached(force_refresh=False, use_time=False):
         now_timestr = datetime.now().strftime('%H%M')
         filename_parts = [now_timestr, *filename_parts]
 
-      cache_filename = '-'.join(filename_parts)
+      cache_filename = '-'.join(filename_parts) + '.pkl'
       cache_filepath = os.path.join(cache_dir, cache_filename)
       if os.path.exists(cache_filepath) and not force_refresh:
         with open(cache_filepath, 'rb') as cachehandle:

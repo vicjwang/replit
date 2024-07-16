@@ -57,6 +57,7 @@ def cached(force_refresh=False, use_time=False):
 
       # Create cache folder if not exist.
       today_datestr = datetime.now().strftime('%Y%m%d')
+      print('vjw cache date', today_datestr)
       cache_dir = os.path.join(CACHE_DIR, today_datestr)
       if not os.path.exists(cache_dir):
         subprocess.run(['mkdir', cache_dir])
@@ -71,9 +72,11 @@ def cached(force_refresh=False, use_time=False):
 
       cache_filename = '-'.join(filename_parts)
       cache_filepath = os.path.join(cache_dir, cache_filename)
+      print('vjw cahce filepath', cache_filepath)
       if os.path.exists(cache_filepath) and not force_refresh:
         with open(cache_filepath, 'rb') as cachehandle:
           printout("Using cached result from '%s'" % cache_filepath)
+          print('vjw using cached')
           return pickle.load(cachehandle)
 
       # execute the function with all arguments passed

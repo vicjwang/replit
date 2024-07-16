@@ -64,8 +64,8 @@ class DerivativeStrategyBase:
 
       chain = fetch_options_chain(self.symbol, expiry_date.strftime(DATE_FORMAT))
       # Drop column if all values = nan.
-      chain_df = pd.DataFrame.from_records(chain, columns=self.INCLUDE_COLUMNS).dropna(axis=1, how='all')
-#      chain_df = pd.DataFrame.from_records(chain).dropna(axis=1, how='all')
+#      chain_df = pd.DataFrame.from_records(chain, columns=self.INCLUDE_COLUMNS).dropna(axis=1, how='all')
+      chain_df = pd.DataFrame.from_records(chain).dropna(axis=1, how='all')
 
       if chain_df.empty:
         continue
@@ -86,6 +86,8 @@ class DerivativeStrategyBase:
     self.df = pd.concat([self.df.drop(columns=['greeks']), greeks], axis=1)
 
     self.df['yoy_roi'] = self.df.apply(calc_annual_roi, axis=1)
+#    self.df['expiration_date'] = pd.to_datetime(self.df['expiration_date'])
+    print('vjw self.df\n', self.df['updated_at'].head())
 
   # TODO (vjw): use @property?
   def get_price_model(self):
@@ -122,7 +124,9 @@ class DerivativeStrategyBase:
     if expiry_after:
       start_mask = (graph_df['expiration_date'] > expiry_after)
       mask &= start_mask
-
+    
+    print('vjw exp', type(graph_df['expiration_date']))
+    print('vjw exp_before', type(expiry_before))
     if expiry_before:
       end_mask = (graph_df['expiration_date'] < expiry_before)
       mask &= end_mask

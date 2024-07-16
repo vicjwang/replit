@@ -1,5 +1,9 @@
 import pandas as pd
 
+from datetime import datetime
+from freezegun import freeze_time
+
+from constants import FROZEN_TEST_DATE
 from analysis.derivative_strategy import DerivativeStrategyBase
 
 
@@ -8,6 +12,7 @@ SNAPSHOT_CSV = 'tests/fixtures/MDB-20240715-snapshot.csv'
 
 class TestDerivativeStrategyBase:
   
+  @freeze_time(FROZEN_TEST_DATE)
   def test_build_snapshot(self):
     symbol = 'MDB'
     strat = DerivativeStrategyBase(symbol, side='short')
@@ -15,6 +20,9 @@ class TestDerivativeStrategyBase:
 
     result = snapshot.df
     expected = pd.read_csv(SNAPSHOT_CSV)
+    print('vjw date', datetime.now())
+    print('vjw resul\n', result.head())
+    print('vjw exp\n', expected.head())
 
     pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
 

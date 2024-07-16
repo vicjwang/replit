@@ -28,6 +28,14 @@ from vendors.tradier import (
 
 
 class DerivativeStrategyBase:
+  INCLUDE_COLUMNS = [
+    'expiration_date',
+    'option_type',
+    'strike',
+    'bid',
+    'volume',
+    'greeks',
+  ]
   
   def __init__(self, symbol, side=None):
     self.symbol = symbol
@@ -56,7 +64,8 @@ class DerivativeStrategyBase:
 
       chain = fetch_options_chain(self.symbol, expiry_date.strftime(DATE_FORMAT))
       # Drop column if all values = nan.
-      chain_df = pd.DataFrame.from_records(chain).dropna(axis=1, how='all')
+      chain_df = pd.DataFrame.from_records(chain, columns=self.INCLUDE_COLUMNS).dropna(axis=1, how='all')
+#      chain_df = pd.DataFrame.from_records(chain).dropna(axis=1, how='all')
 
       if chain_df.empty:
         continue
@@ -131,7 +140,7 @@ class DerivativeStrategyBase:
 
     title = f"{self.symbol}: {self.side.title()} {option_type.title()} Strikes @ Z-Score={zscore} ({win_proba}% Win Proba)"
     text = '\n'.join((
-      f'\${latest_price}, {latest_change * 100:.2f}%',
+      f'${latest_price}, {latest_change * 100:.2f}%',
       f'Next earnings: {next_earnings.strftime(DATE_FORMAT)}',
       f'{MU}={mu * 100:.2f}%',
       f'{SIGMA_LOWER}={sigma * 100:.2f}%',
@@ -171,7 +180,7 @@ class DerivativeStrategySnapshot:
     ax.plot(xs, ys, linestyle='-', marker='o')
     scatter = ax.scatter(xs, ys)
     for x, y, strike, bid, delta in zip(xs, ys, strikes, bids, deltas):
-      label = f'K=\${strike}; \${bid} ({DELTA_UPPER}={delta:.2f})'
+      label = f'K=${strike}; ${bid} ({DELTA_UPPER}={delta:.2f})'
       ax.text(x, y, label, fontsize=8)#, ha='right', va='bottom')
 
     # Custom xticks.

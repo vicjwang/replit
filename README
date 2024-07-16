@@ -7,7 +7,7 @@ $ poetry run python main.py scan -s 0
 $ poetry run python main.py dd -t mdb,nvda -s 1
 
 Run tests:
-$ ENV=test poetry run pytest test_main.py
+$ ENV=test poetry run pytest -k test_main
 
 Run profiler:
 $ ENV=test poetry run scalene main.py scan -s 0 -t mdb

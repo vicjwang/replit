@@ -18,7 +18,7 @@ mplcursors = "^0.5.3"
 pytest = "^8.2.2"
 markdown-it-py = "^3.0.0"
 scalene = "^1.5.42.2"
-pytest-freezegun = "^0.4.2"
+freezegun = "^1.5.1"
 
 [tool.pyright]
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md
@@ -33,3 +33,6 @@ ignore = ['W291', 'W292', 'W293']
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = "."

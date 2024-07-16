@@ -77,7 +77,6 @@ class DerivativeStrategyBase:
     self.df = pd.concat([self.df.drop(columns=['greeks']), greeks], axis=1)
 
     self.df['yoy_roi'] = self.df.apply(calc_annual_roi, axis=1)
-    self.df['expiration_date'] = pd.to_datetime(self.df['expiration_date'])
 
   # TODO (vjw): use @property?
   def get_price_model(self):
@@ -119,7 +118,7 @@ class DerivativeStrategyBase:
       end_mask = (graph_df['expiration_date'] < expiry_before)
       mask &= end_mask
 
-    graph_df = graph_df[mask]
+    graph_df = graph_df[mask].reset_index(drop=True)
 
     if len(graph_df) == 0:
       raise ValueError(f"No eligible options to graph (option_type={option_type}, expiry_after={expiry_after}, expiry_before={expiry_before}).")

@@ -9,7 +9,7 @@ IS_WIDESCREEN = True
 IS_PHONE = False
 MY_WIN_PROBA = 84  # in percent
 SHOW_GRAPHS = True
-IS_DEBUG = True
+IS_DEBUG = False
 IS_VERBOSE = False
 START_DATE = '2023-01-01'
 SHOULD_AVOID_EARNINGS = True
@@ -132,6 +132,6 @@ WATCHLIST = dict(
 )
 
 DATE_FORMAT = '%Y-%m-%d'
-CACHE_DIR = './cache' if ENV != 'test' else './tests/cache'
+CACHE_DIR = './tests/cache' if ENV == 'test' else './cache'
 EASTERN_TZ = pytz.timezone('US/Eastern')
 FROZEN_TEST_DATE = '2024-07-16'

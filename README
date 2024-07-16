@@ -10,4 +10,4 @@ Run tests:
 $ ENV=test poetry run pytest test_main.py
 
 Run profiler:
-ENV=test poetry run scalene main.py scan -s 0 -t mdb
+$ ENV=test poetry run scalene main.py scan -s 0 -t mdb

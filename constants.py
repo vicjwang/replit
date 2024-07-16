@@ -133,3 +133,4 @@ WATCHLIST = dict(
 DATE_FORMAT = '%Y-%m-%d'
 CACHE_DIR = './cache'
 EASTERN_TZ = pytz.timezone('US/Eastern')
+FROZEN_TEST_DATE = '2024-07-15'

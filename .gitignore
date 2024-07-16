@@ -1,5 +1,5 @@
 *.un~
 __pycache__
 .python-version
-cache
+cache/*
 *~

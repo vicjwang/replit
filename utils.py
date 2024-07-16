@@ -1,14 +1,11 @@
 import os
 import math
-import pandas as pd
-import pickle
-import pytz
-import subprocess
+import numpy as np
 
 from datetime import datetime, timedelta, time
 from constants import (
   IS_VERBOSE, USE_EARNINGS_CSV, START_DATE, DATE_FORMAT,
-  ZSCORE_WIN_PROBA,
+  ZSCORE_WIN_PROBA, EASTERN_TZ,
 )
 
 
@@ -29,17 +26,16 @@ def is_market_hours():
   market_open = time(9, 30)
   market_close = time(16, 0)
 
-  eastern = pytz.timezone('US/Eastern')
-  now = datetime.now(eastern)
+  now = datetime.now(EASTERN_TZ)
 
   return now.weekday() in (0,1,2,3,4) and market_open <= now.time() <= market_close
 
 
-def count_trading_days(expiry_dt):
-  today = datetime.now()
-  expiry_dt += timedelta(days=1)
-
-  trading_dte = len(pd.date_range(start=today, end=expiry_dt, freq='B'))
+def count_trading_days(expiry_on):
+  start = np.datetime64('today', 'D')
+  end = np.datetime64(expiry_on + timedelta(days=1), 'D')
+  
+  trading_dte = np.busday_count(start, end)
   return trading_dte
   
 

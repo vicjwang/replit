@@ -1,4 +1,5 @@
 import os
+import pytz
 from collections import namedtuple
 
 
@@ -131,3 +132,4 @@ WATCHLIST = dict(
 
 DATE_FORMAT = '%Y-%m-%d'
 CACHE_DIR = './cache'
+EASTERN_TZ = pytz.timezone('US/Eastern')

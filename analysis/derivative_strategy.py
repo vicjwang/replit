@@ -48,6 +48,9 @@ class DerivativeStrategyBase:
   
     self.df = None
     
+    zscores = sorted(PHI_ZSCORE.values())
+
+    chain_dfs = []
     # Target strikes depend on expiry dates so concat by expiry date groups.
     for expiry_date in self.expiry_dates:
 
@@ -59,19 +62,20 @@ class DerivativeStrategyBase:
         continue
 
       trading_dte = count_trading_days(expiry_date)
-      for zscore in sorted(PHI_ZSCORE.values()):
+      for zscore in zscores:
         target_strike = self.price_model.predict_price(trading_dte, zscore)
         colname = f"{zscore}_sigma_target"
         chain_df[colname] = target_strike
 
-      if self.df is None:
-        self.df = chain_df
-      else:
-        self.df = pd.concat([self.df, chain_df], axis=0)
+      chain_dfs.append(chain_df)
+      
+    # Optimization - concat just once at end, otherwise copy created per loop.
+    self.df = pd.concat(chain_dfs, axis=0)
 
     # Helper columns including unnested greek columns.
-    self.df = pd.concat([self.df, self.df['greeks'].apply(pd.Series)], axis=1)
-    del self.df['greeks']
+    greeks = pd.json_normalize(self.df['greeks']).set_index(self.df.index)
+    self.df = pd.concat([self.df.drop(columns=['greeks']), greeks], axis=1)
+
     self.df['yoy_roi'] = self.df.apply(calc_annual_roi, axis=1)
     self.df['expiration_date'] = pd.to_datetime(self.df['expiration_date'])
 

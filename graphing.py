@@ -59,6 +59,6 @@ class FigureManager:
       fig.subplots_adjust()
       plt.tight_layout()
 
-    print('Rendering in Output tab...')
     if ENV != 'test':
+      print('Rendering in Output tab...')
       plt.show()

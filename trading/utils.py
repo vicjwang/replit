@@ -32,7 +32,7 @@ def is_market_hours():
 
 
 def count_trading_days(expiry_on):
-  start = np.datetime64('today', 'D')
+  start = np.datetime64(datetime.now().date(), 'D')
   end = np.datetime64(expiry_on + timedelta(days=1), 'D')
   
   trading_dte = np.busday_count(start, end)

@@ -4,6 +4,8 @@ import pandas as pd
 
 import config
 
+from datetime import datetime
+
 from analysis.models import PriceModel
 from constants import (
   DATE_FORMAT,
@@ -192,6 +194,7 @@ class DerivativeStrategySnapshot:
 
     cursor = mplcursors.cursor(scatter, hover=True)
 
+    dtes = self.df['expiration_date'].apply(lambda d: (d - datetime.now()).days + 1)
     vols = self.df['smv_vol']
     volumes = self.df['volume']
     thetas = self.df['theta']
@@ -200,6 +203,7 @@ class DerivativeStrategySnapshot:
     tooltip_map = dict()
     for i, expiry in enumerate(xs):
       expiry_at = expiry.strftime(DATE_FORMAT)
+      dte = dtes.iloc[i]
       target_strike = target_strikes.iloc[i]
       strike = strikes.iloc[i]
       bid = bids.iloc[i]
@@ -209,15 +213,16 @@ class DerivativeStrategySnapshot:
       theta = thetas.iloc[i].round(4)
       gamma = gammas.iloc[i].round(4)
       vega = vegas.iloc[i].round(4)
-      tooltip_map[expiry_at] = (target_strike, strike, bid, volume, vol, delta, theta, gamma, vega)
+      tooltip_map[expiry_at] = (dte, target_strike, strike, bid, volume, vol, delta, theta, gamma, vega)
 
     @cursor.connect('add')
     def on_add(sel):
       expiry_at = mdates.num2date(sel.target[0]).strftime(DATE_FORMAT)
       roi = sel.target[1]
-      target_strike, strike, bid, volume, vol, delta, theta, gamma, vega = tooltip_map[expiry_at]
+      dte, target_strike, strike, bid, volume, vol, delta, theta, gamma, vega = tooltip_map[expiry_at]
       text = '\n'.join([
         f"expiry={expiry_at}",
+        f"dte={dte}",
         f"target=${target_strike}",
         f"strike=${strike}",
         f"bid=${bid}",

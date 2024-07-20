@@ -2,11 +2,10 @@ import os
 import math
 import numpy as np
 
+import config
+
 from datetime import datetime, timedelta, time
-from constants import (
-  IS_VERBOSE, USE_EARNINGS_CSV, START_DATE, DATE_FORMAT,
-  ZSCORE_WIN_PROBA, EASTERN_TZ,
-)
+from constants import DATE_FORMAT, ZSCORE_WIN_PROBA, EASTERN_TZ
 
 
 def strformat(symbol, s):
@@ -23,6 +22,10 @@ def get_target_colname(zscore):
 
 
 def is_market_hours():
+
+  if config.ENV == 'test':
+    return False
+
   market_open = time(9, 30)
   market_close = time(16, 0)
 
@@ -43,15 +46,15 @@ def calc_annual_roi(contract) -> float:
   strike = contract['strike']
   expiry_date = datetime.strptime(contract['expiration_date'], DATE_FORMAT).date()
   bid = contract['bid']
-  days_to_expiry = (expiry_date - datetime.now().date()).days
+  dte = (expiry_date - datetime.now().date()).days
   
   roi = bid / strike
-  annual_roi = roi * 365 / days_to_expiry if days_to_expiry > 0 else roi * 365
+  annual_roi = roi * 365 / dte if dte > 0 else roi * 365
   return annual_roi
 
 
 def printout(s=''):
-  if not IS_VERBOSE:
+  if not config.IS_VERBOSE:
     return
   print(s)
 

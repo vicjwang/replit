@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import sys
 
+import config
+
 from datetime import timedelta
 
 from vendors.tradier import (
@@ -14,8 +16,6 @@ from vendors.tradier import (
 
 from constants import (
   DATE_FORMAT,
-  START_DATE,
-  SHOULD_AVOID_EARNINGS,
   MU,
   SIGMA_LOWER,
 )
@@ -31,7 +31,7 @@ class PriceModel:
   _COLNAME_DATE = 'date'
   _COLNAME_PREV_DAY = 'previous_trading_date'
 
-  def __init__(self, symbol, start_date=START_DATE, avoid_earnings=SHOULD_AVOID_EARNINGS):
+  def __init__(self, symbol, start_date=config.REGIME_START_DATE, avoid_earnings=config.SHOULD_AVOID_EARNINGS):
     self.symbol = symbol
 
     # Sorted in most recent first.

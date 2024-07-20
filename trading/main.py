@@ -5,10 +5,10 @@ import traceback
 from collections import defaultdict
 
 from analysis import strategy as Strategy
+import config
 from constants import (
   COVERED_CALLS,
   WATCHLIST,
-  IS_DEBUG,
   SIDE_SHORT,
   STOCKS,
   WORTHY_MIN_BID,
@@ -51,7 +51,7 @@ def scan(snapshot_fn, tickers, figman):
 
     except Exception as e:
       print(strformat(symbol, f"Skipping - {e}"))
-      if IS_DEBUG:
+      if config.IS_DEBUG:
         traceback.print_exc()
       continue
 
@@ -97,7 +97,7 @@ def deep_dive(strategy, option_type, zscores, figman):
 
     except Exception as e:
       print(strformat(symbol, f"Skipping - {e}"))
-      if IS_DEBUG:
+      if config.IS_DEBUG:
         traceback.print_exc()
       continue
   print()

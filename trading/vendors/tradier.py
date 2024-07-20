@@ -4,10 +4,12 @@ import statistics
 import json
 import pandas as pd
 
+import config
+
 from datetime import datetime
 from pandas.core.common import not_none
 from utils import is_market_hours
-from constants import START_DATE, USE_EARNINGS_CSV, DATE_FORMAT
+from constants import DATE_FORMAT
 from decorators import cached
 
 
@@ -69,7 +71,7 @@ def fetch_options_chain(symbol, expiry_date, option_type=None, target_price=None
 
 def fetch_earnings_dates(symbol, start_date:str=None):
 
-  if USE_EARNINGS_CSV:
+  if config.USE_EARNINGS_CSV:
     earnings_dates = read_earnings_dates_from_csv(symbol)
     return earnings_dates
 
@@ -114,12 +116,12 @@ def fetch_next_earnings_date(symbol):
 
 
 def fetch_past_earnings_dates(symbol):
-  earnings_dates = fetch_earnings_dates(symbol, start_date=START_DATE)
+  earnings_dates = fetch_earnings_dates(symbol, start_date=config.REGIME_START_DATE)
   return [x for x in pd.to_datetime(earnings_dates) if x < datetime.now()]
 
 
 def get_next_earnings_date(symbol):
-  earnings_dates = fetch_earnings_dates(symbol, start_date=START_DATE)
+  earnings_dates = fetch_earnings_dates(symbol, start_date=config.REGIME_START_DATE)
   ret = [x for x in pd.to_datetime(earnings_dates) if x > datetime.now()][-1]
   return ret
 

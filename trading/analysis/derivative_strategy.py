@@ -2,6 +2,8 @@ import mplcursors
 import matplotlib.dates as mdates
 import pandas as pd
 
+import config
+
 from analysis.models import PriceModel
 from constants import (
   DATE_FORMAT,
@@ -10,7 +12,6 @@ from constants import (
   MU,
   SIGMA_LOWER,
   MAX_STRIKE,
-  MY_WIN_PROBA,
   WIN_PROBA_ZSCORE,
   WORTHY_MIN_BID,
   WORTHY_MIN_ROI,
@@ -97,8 +98,8 @@ class DerivativeStrategyBase:
       raise ValueError("Invalid option_type: {option_type}")
 
     if zscore is None:
-      zscore = WIN_PROBA_ZSCORE[self.side][option_type][MY_WIN_PROBA]
-      win_proba = MY_WIN_PROBA
+      zscore = WIN_PROBA_ZSCORE[self.side][option_type][config.MY_WIN_PROBA]
+      win_proba = config.MY_WIN_PROBA
     else:
       win_proba = get_win_proba(self.side, option_type, zscore)
 

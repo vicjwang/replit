@@ -1,9 +1,11 @@
 import pandas as pd
 
+import config
+
 from datetime import datetime
 from freezegun import freeze_time
 
-from constants import FROZEN_TEST_DATE, DATE_FORMAT
+from constants import DATE_FORMAT
 from analysis.derivative_strategy import DerivativeStrategyBase
 
 
@@ -12,7 +14,7 @@ SNAPSHOT_CSV = 'tests/fixtures/MDB-snapshot-20240716.csv'
 
 class TestDerivativeStrategyBase:
   
-  @freeze_time(FROZEN_TEST_DATE)
+  @freeze_time(config.FROZEN_TEST_DATE)
   def test_build_snapshot(self):
     symbol = 'MDB'
     strat = DerivativeStrategyBase(symbol, side='short')

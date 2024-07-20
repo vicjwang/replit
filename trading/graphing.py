@@ -2,14 +2,14 @@ import math
 import matplotlib.pyplot as plt
 import os
 
+import config
+
 from collections import OrderedDict
 
 from constants import (
-  ENV,
   FIG_WIDTH,
   FIG_HEIGHT,
   FIG_NCOLS,
-  SHOW_GRAPHS,
 )
 
 
@@ -28,8 +28,8 @@ class FigureManager:
 
   def render(self):
     
-    if SHOW_GRAPHS is False:
-      print(f"Disabled render (SHOW_GRAPHS={SHOW_GRAPHS}).")
+    if config.SKIP_GRAPHS:
+      print(f"Disabled render (config.SKIP_GRAPHS={config.SKIP_GRAPHS}).")
       return
 
     for fig_title, graphs in self.figures.items():
@@ -59,6 +59,6 @@ class FigureManager:
       fig.subplots_adjust()
       plt.tight_layout()
 
-    if ENV != 'test':
+    if config.SHOW_GRAPHS:
       print('Rendering in Output tab...')
       plt.show()

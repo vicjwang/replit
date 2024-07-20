@@ -5,12 +5,12 @@ import os
 import pickle
 import subprocess
 
+import config
+
 from constants import (
-  CACHE_DIR,
   FIG_HEIGHT,
   FIG_WIDTH,
   FIG_NCOLS,
-  SHOW_GRAPHS,
 )
 from datetime import datetime
 from utils import printout
@@ -34,7 +34,7 @@ def graph(strategy_fn):
 
     num_axes = len(fig.get_axes())
       
-    if SHOW_GRAPHS:
+    if config.SHOW_GRAPHS:
       print('Rendering plot in Output tab...')
       plt.tight_layout()
       fig.subplots_adjust()
@@ -57,7 +57,7 @@ def cached(force_refresh=False, use_time=False):
 
       # Create cache folder if not exist.
       today_datestr = datetime.now().strftime('%Y%m%d')
-      cache_dir = os.path.join(CACHE_DIR, today_datestr)
+      cache_dir = os.path.join(config.CACHE_DIR, today_datestr)
       if not os.path.exists(cache_dir):
         subprocess.run(['mkdir', cache_dir])
 

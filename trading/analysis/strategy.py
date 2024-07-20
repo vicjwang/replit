@@ -3,18 +3,18 @@ import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
 
+import config
+
 from analysis.models import PriceModel
 from constants import (
   COVERED_CALLS,
   DATE_FORMAT,
   DELTA_UPPER,
   PHI_ZSCORE,
-  MIN_EXPIRY_DATESTR,
   MU,
   SIDE_SHORT,
   SIGMA_LOWER,
   MAX_STRIKE,
-  MY_WIN_PROBA,
   WIN_PROBA_ZSCORE,
   WORTHY_MIN_BID,
   WORTHY_MIN_ROI,
@@ -52,7 +52,7 @@ def sell_LTDITM_puts(symbol):
 
   deriv_strat = DerivativeStrategyBase(symbol, side=side)
   print(deriv_strat)
-  return deriv_strat.build_snapshot(option_type, expiry_after=MIN_EXPIRY_DATESTR)
+  return deriv_strat.build_snapshot(option_type, expiry_after=config.MIN_EXPIRY_DATESTR)
 
 
 def sell_LTDOTM_calls(symbol):
@@ -62,4 +62,4 @@ def sell_LTDOTM_calls(symbol):
 
   deriv_strat = DerivativeStrategyBase(symbol, side=side)
   print(deriv_strat)
-  return deriv_strat.build_snapshot(option_type, expiry_after=MIN_EXPIRY_DATESTR)
+  return deriv_strat.build_snapshot(option_type, expiry_after=config.MIN_EXPIRY_DATESTR)

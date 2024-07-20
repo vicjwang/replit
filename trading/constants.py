@@ -2,19 +2,8 @@ import os
 import pytz
 from collections import namedtuple
 
+from config import IS_WIDESCREEN, IS_PHONE
 
-ENV = os.environ.get('ENV') or 'dev'
-
-IS_WIDESCREEN = True
-IS_PHONE = False
-MY_WIN_PROBA = 84  # in percent
-SHOW_GRAPHS = True
-IS_DEBUG = False
-IS_VERBOSE = False
-START_DATE = '2023-01-01'
-SHOULD_AVOID_EARNINGS = True
-MIN_EXPIRY_DATESTR = '2025-01-01'
-USE_EARNINGS_CSV = False
 
 WORTHY_MIN_BID = 0.8
 WORTHY_MIN_ROI = 0.2
@@ -132,6 +121,4 @@ WATCHLIST = dict(
 )
 
 DATE_FORMAT = '%Y-%m-%d'
-CACHE_DIR = './tests/cache' if ENV == 'test' else './cache'
 EASTERN_TZ = pytz.timezone('US/Eastern')
-FROZEN_TEST_DATE = '2024-07-16'

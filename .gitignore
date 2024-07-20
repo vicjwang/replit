@@ -1,5 +1,4 @@
 *.un~
 __pycache__
 .python-version
-trading/cache/*
 *~

@@ -10,10 +10,10 @@ from analysis.models import PriceModel
 from constants import (
   DATE_FORMAT,
   DELTA_UPPER,
-  PHI_ZSCORE,
   MU,
   SIGMA_LOWER,
   MAX_STRIKE,
+  T_SIG_LEVELS,
   WIN_PROBA_ZSCORE,
   WORTHY_MIN_BID,
   WORTHY_MIN_ROI,
@@ -23,6 +23,7 @@ from utils import (
   calc_annual_roi,
   get_win_proba,
   get_target_colname,
+  get_tscore,
 )
 from vendors.tradier import (
   fetch_options_expirations,
@@ -58,8 +59,6 @@ class DerivativeStrategyBase:
   
     self.df = None
     
-    zscores = sorted(PHI_ZSCORE.values())
-
     chain_dfs = []
     # Target strikes depend on expiry dates so concat by expiry date groups.
     for expiry_date in self.expiry_dates:
@@ -73,9 +72,10 @@ class DerivativeStrategyBase:
         continue
 
       trading_dte = count_trading_days(expiry_date)
-      for zscore in zscores:
-        target_strike = self.price_model.predict_price(trading_dte, zscore)
-        colname = f"{zscore}_sigma_target"
+      for sig_level in sorted(T_SIG_LEVELS):
+        tscore = get_tscore(sig_level, trading_dte - 1)
+        target_strike = self.price_model.predict_price(trading_dte, tscore=tscore)
+        colname = get_target_colname(sig_level)
         chain_df[colname] = target_strike
 
       chain_dfs.append(chain_df)
@@ -94,19 +94,13 @@ class DerivativeStrategyBase:
   def get_price_model(self):
     return self.price_model
 
-  def build_snapshot(self, option_type, zscore=None, expiry_after=None, expiry_before=None):
+  def build_snapshot(self, option_type, sig_level, expiry_after=None, expiry_before=None):
 
     if option_type not in ('call', 'put'):
       raise ValueError("Invalid option_type: {option_type}")
 
-    if zscore is None:
-      zscore = WIN_PROBA_ZSCORE[self.side][option_type][config.MY_WIN_PROBA]
-      win_proba = config.MY_WIN_PROBA
-    else:
-      win_proba = get_win_proba(self.side, option_type, zscore)
-
     # Capture closest 2 strikes.
-    target_colname = get_target_colname(zscore)
+    target_colname = get_target_colname(sig_level)
     graph_df = self.df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])
 
     strike_mask = (graph_df['strike'] < MAX_STRIKE)
@@ -141,7 +135,8 @@ class DerivativeStrategyBase:
     latest_change = self.price_model.get_latest_change()
     next_earnings = self.price_model.get_next_earnings_date()
 
-    title = f"{self.symbol}: {self.side.title()} {option_type.title()} Strikes @ Z-Score={zscore} ({win_proba}% Win Proba)"
+    win_proba = get_win_proba(self.side, option_type, sig_level)
+    title = f"{self.symbol}: {self.side.title()} {option_type.title()} Strikes @ {win_proba}% Win Proba"
     text = '\n'.join((
       f'${latest_price}, {latest_change * 100:.2f}%',
       f'Next earnings: {next_earnings.strftime(DATE_FORMAT)}',
@@ -149,23 +144,23 @@ class DerivativeStrategyBase:
       f'{SIGMA_LOWER}={sigma * 100:.2f}%',
     ))
     return DerivativeStrategySnapshot(self.symbol, graph_df, self.side, option_type,
-                                      zscore, title=title, text=text, next_earnings=next_earnings)
+                                      sig_level, title=title, text=text, next_earnings=next_earnings)
 
 
 class DerivativeStrategySnapshot:
   
-  def __init__(self, symbol, df, side, option_type, zscore, title=None, text=None, next_earnings=None):
+  def __init__(self, symbol, df, side, option_type, sig_level, title=None, text=None, next_earnings=None):
     self.symbol = symbol
     self.df = df
     self.title = title
     self.text = text
     self.side = side
     self.option_type = option_type
-    self.zscore = zscore
+    self.sig_level = sig_level
     self.next_earnings = next_earnings
 
   def graph_roi_vs_expiry(self, ax):
-    target_colname = get_target_colname(self.zscore)
+    target_colname = get_target_colname(self.sig_level)
 
     rois = self.df['yoy_roi']
     expirations = self.df['expiration_date']
@@ -239,7 +234,6 @@ class DerivativeStrategySnapshot:
     yticks = [i/10 for i in range(2, 10)]
     ax.set_yticks(yticks)
 
-    win_proba = get_win_proba(self.side, self.option_type, self.zscore)
     ax.set_title(self.title)
 
     bbox_props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)

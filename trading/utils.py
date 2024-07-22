@@ -1,6 +1,7 @@
 import os
 import math
 import numpy as np
+import scipy.stats as stats
 
 import config
 
@@ -13,12 +14,23 @@ def strformat(symbol, s):
     return text
 
 
-def get_win_proba(side, option_type, zscore):
-  return ZSCORE_WIN_PROBA[side][option_type][zscore]
+def get_win_proba(side, option_type, sig_level):
+  if side == 'long' and option_type == 'call':
+    return 1 - sig_level
+  if side == 'long' and option_type == 'put':
+    return sig_level
+  if side == 'short' and option_type == 'call':
+    return sig_level
+  if side == 'short' and option_type == 'put':
+    return 1 - sig_level
 
 
-def get_target_colname(zscore):
-  return f"{zscore}_sigma_target"
+def get_tscore(a, dof):
+  return stats.t.ppf(a, dof)
+
+
+def get_target_colname(sig_level):
+  return f"{sig_level}_target"
 
 
 def is_market_hours():
@@ -59,10 +71,13 @@ def printout(s=''):
   print(s)
 
 
-def calc_expected_price(current_price, mu, sigma, n, zscore):
+def calc_expected_price(current_price, mu, sigma, n, zscore=None, tscore=None):
+  assert tscore or zscore
+  t_or_z_score = tscore or zscore
+
   # Mean is linear with n.
   # Sigma is linear with sqrt(n).
-  exp_strike = current_price * (1 + n*mu + zscore*math.sqrt(n)*sigma)
+  exp_strike = current_price * (1 + n*mu + t_or_z_score*math.sqrt(n)*sigma)
   return exp_strike
 
 

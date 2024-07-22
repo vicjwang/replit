@@ -69,12 +69,12 @@ class PriceModel:
   def get_daily_stdev(self):
     return self.daily_stdev
 
-  def predict_price(self, days, zscore, from_price=None):
+  def predict_price(self, days, tscore=None, zscore=None, from_price=None):
     if from_price is None:
       from_price = self.get_latest_price()
     mu = self.get_daily_mean()
     sigma = self.get_daily_stdev()
-    target_price = calc_expected_price(from_price, mu, sigma, days, zscore)
+    target_price = calc_expected_price(from_price, mu, sigma, days, tscore=tscore, zscore=zscore)
     return target_price
 
   def __str__(self):

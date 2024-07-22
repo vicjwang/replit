@@ -9,7 +9,7 @@ from constants import DATE_FORMAT
 from analysis.derivative_strategy import DerivativeStrategyBase
 
 
-SNAPSHOT_CSV = 'tests/fixtures/MDB-snapshot-20240716.csv'
+SNAPSHOT_CSV = 'tests/fixtures/MDB-snapshot-20240722.csv'
 
 
 class TestDerivativeStrategyBase:

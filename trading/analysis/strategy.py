@@ -41,7 +41,7 @@ def sell_intraquarter_derivatives(symbol):
 
   next_earnings_date = price_model.get_next_earnings_date()
 
-  return deriv_strat.build_snapshot(option_type, expiry_before=next_earnings_date)
+  return deriv_strat.build_snapshot(option_type, 0.15, expiry_before=next_earnings_date)
 
 
 def sell_LTDITM_puts(symbol):
@@ -51,7 +51,7 @@ def sell_LTDITM_puts(symbol):
 
   deriv_strat = DerivativeStrategyBase(symbol, side=side)
   print(deriv_strat)
-  return deriv_strat.build_snapshot(option_type, expiry_after=config.MIN_EXPIRY_DATESTR)
+  return deriv_strat.build_snapshot(option_type, 0.15, expiry_after=config.MIN_EXPIRY_DATESTR)
 
 
 def sell_LTDOTM_calls(symbol):
@@ -61,4 +61,4 @@ def sell_LTDOTM_calls(symbol):
 
   deriv_strat = DerivativeStrategyBase(symbol, side=side)
   print(deriv_strat)
-  return deriv_strat.build_snapshot(option_type, expiry_after=config.MIN_EXPIRY_DATESTR)
+  return deriv_strat.build_snapshot(option_type, 0.85, expiry_after=config.MIN_EXPIRY_DATESTR)

@@ -4,7 +4,7 @@ Usage:
 $ poetry run python main.py scan -s 0
 
 "Deep dive on MDB and NVDA for puts only"
-$ poetry run python main.py dd -t mdb,nvda -s 1
+$ poetry run python main.py dd -s 1 -t mdb,nvda
 
 Run tests:
 $ ENV=test poetry run pytest -k test_main

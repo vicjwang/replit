@@ -69,6 +69,7 @@ def fetch_options_chain(symbol, expiry_date, option_type=None, target_price=None
   return chain
 
 
+@cached()
 def fetch_earnings_dates(symbol, start_date:str=None):
 
   if config.USE_EARNINGS_CSV:
@@ -115,11 +116,13 @@ def fetch_next_earnings_date(symbol):
   return next_event if next_event > today_str else None
 
 
+@cached()
 def fetch_past_earnings_dates(symbol):
   earnings_dates = fetch_earnings_dates(symbol, start_date=config.REGIME_START_DATE)
   return [x for x in pd.to_datetime(earnings_dates) if x < datetime.now()]
 
 
+@cached()
 def get_next_earnings_date(symbol):
   earnings_dates = fetch_earnings_dates(symbol, start_date=config.REGIME_START_DATE)
   ret = [x for x in pd.to_datetime(earnings_dates) if x > datetime.now()][-1]

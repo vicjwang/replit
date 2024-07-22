@@ -11,6 +11,7 @@ from constants import (
   WATCHLIST,
   SIDE_SHORT,
   STOCKS,
+  T_SIG_LEVELS,
   WORTHY_MIN_BID,
   WORTHY_MIN_ROI,
 )
@@ -68,9 +69,9 @@ def deep_dive_puts(tickers, figman):
     symbol = stock.symbol
     strat = Strategy.DerivativeStrategyBase(symbol, side=SIDE_SHORT)
     print(strat)
-
-    zscores = [-1, -1.28, -1.645, -2.33]
-    deep_dive(strat, 'put', zscores, figman)
+  
+    sig_levels = [0.15, 0.10, 0.05, 0.01]
+    deep_dive(strat, 'put', sig_levels, figman)
 
 
 def deep_dive_calls(tickers, figman):
@@ -80,18 +81,18 @@ def deep_dive_calls(tickers, figman):
     if symbol not in COVERED_CALLS:
       continue
 
-    zscores = [0, 1, 1.28, 1.645, 2.33]
-    deep_dive(symbol, 'call', zscores, figman)
+    sig_levels = [0.85, 0.90, 0.95, 0.975, 0.99]
+    deep_dive(symbol, 'call', sig_levels, figman)
 
 
-def deep_dive(strategy, option_type, zscores, figman):
+def deep_dive(strategy, option_type, sig_levels, figman):
 
   symbol = strategy.symbol
   figman.add_empty_figure(strformat(symbol, option_type))
 
-  for zscore in zscores:
+  for sig_level in sig_levels:
     try:
-      snapshot = strategy.build_snapshot(option_type, zscore=zscore)
+      snapshot = strategy.build_snapshot(option_type, sig_level)
       figman.add_graph_as_ax(snapshot.graph_roi_vs_expiry)
       print(strformat(symbol, f"Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})\n \"{snapshot.title}\""))
 

@@ -9,7 +9,7 @@ from constants import DATE_FORMAT
 from analysis.derivative_strategy import DerivativeStrategyBase
 
 
-SNAPSHOT_CSV = 'tests/fixtures/MDB-snapshot-20240716.csv'
+SNAPSHOT_CSV = 'tests/fixtures/MDB-snapshot-20240722.csv'
 
 
 class TestDerivativeStrategyBase:
@@ -18,7 +18,7 @@ class TestDerivativeStrategyBase:
   def test_build_snapshot(self):
     symbol = 'MDB'
     strat = DerivativeStrategyBase(symbol, side='short')
-    snapshot = strat.build_snapshot('put', -1)
+    snapshot = strat.build_snapshot('put', 0.15)
 
     result = snapshot.df
     expected = pd.read_csv(SNAPSHOT_CSV, parse_dates=['expiration_date'])
@@ -29,7 +29,7 @@ class TestDerivativeStrategyBase:
 if __name__ == '__main__':
   symbol = 'MDB'
   strat = DerivativeStrategyBase(symbol, side='short')
-  snapshot = strat.build_snapshot('put', -1)
+  snapshot = strat.build_snapshot('put', 0.15)
 
   assert len(snapshot.df) > 0
 

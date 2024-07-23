@@ -6,7 +6,7 @@ import scipy.stats as stats
 import config
 
 from datetime import datetime, timedelta, time
-from constants import DATE_FORMAT, ZSCORE_WIN_PROBA, EASTERN_TZ
+from constants import DATE_FORMAT, EASTERN_TZ
 
 
 def strformat(symbol, s):
@@ -26,6 +26,8 @@ def get_win_proba(side, option_type, sig_level):
 
 
 def get_tscore(a, dof):
+  # a := alpha aka "significance level" of "single tail"
+  # dof := degrees of freedom
   if dof == 1:
     raise ValueError('No T critical value exists for dof=1')
   return stats.t.ppf(a, dof)
@@ -67,13 +69,10 @@ def printout(s=''):
   print(s)
 
 
-def calc_expected_price(current_price, mu, sigma, n, zscore=None, tscore=None):
-  assert tscore or zscore
-  t_or_z_score = tscore or zscore
-
+def calc_expected_price(current_price, mu, sigma, n, tscore=None):
   # Mean is linear with n.
   # Sigma is linear with sqrt(n).
-  exp_strike = current_price * (1 + n*mu + t_or_z_score*math.sqrt(n)*sigma)
+  exp_strike = current_price * (1 + n*mu + tscore*math.sqrt(n)*sigma)
   return exp_strike
 
 

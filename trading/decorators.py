@@ -1,49 +1,11 @@
 import functools
-import math
-import matplotlib.pyplot as plt
 import os
 import pickle
 import subprocess
 
 import config
 
-from constants import (
-  FIG_HEIGHT,
-  FIG_WIDTH,
-  FIG_NCOLS,
-)
-from datetime import datetime
 from utils import printout
-
-
-def graph(strategy_fn):
-  
-  @functools.wraps(strategy_fn)
-  def wrapped(*args, **kwargs):
-    
-    # add some extra rows for visibility on iPad
-    fig, ax = plt.subplots(figsize=(FIG_WIDTH, FIG_HEIGHT))
-
-
-    strategy_fn(*args, **kwargs)
-
-
-    for ax in axes.flatten():
-      if not ax.has_data():
-        fig.delaxes(ax)
-
-    num_axes = len(fig.get_axes())
-      
-    if config.SHOW_GRAPHS:
-      print('Rendering plot in Output tab...')
-      plt.tight_layout()
-      fig.subplots_adjust()
-      plt.show()
-
-
-    return
-
-  return wrapped
 
 
 def cached(force_refresh=False, use_time=False):

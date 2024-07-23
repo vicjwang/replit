@@ -11,43 +11,6 @@ MAX_STRIKE = 280
 
 T_SIG_LEVELS = [0.01, 0.025, 0.05, 0.10, 0.15, 0.85, 0.90, 0.95, 0.975, 0.99]
 
-PHI_ZSCORE = {
-  # Includes entire left tail aka values directly taken from Standard Normal Table.
-  1: -2.33,
-  5: -1.645,
-  10: -1.28,
-  15: -1.036,
-  16: -1,
-  50: 0,
-  84: 1,
-  85: 1.036,
-  90: 1.28,
-  95: 1.645,
-  99: 2.33,
-}
-
-WIN_PROBA_ZSCORE = dict(
-  short=dict(
-    # For short put (aka CSEP), to keep premium without assignment aka expire OTM:
-    #   - 84 win proba -> zscore = -1
-    #   - 50 win proba -> zscore = 0
-    #   - 16 win proba -> zscore = 1
-    put={p: -1*z for p, z in PHI_ZSCORE.items()},
-  
-    # For short call (aka CC), to keep premium without assignment aka expire OTM:
-    #   - 84 win proba -> zscore = 1
-    #   - 50 win proba -> zscore = 0
-    #   - 16 win proba -> zscore = -1
-    call=PHI_ZSCORE.copy(),
-  )
-)
-ZSCORE_WIN_PROBA = dict(
-  short=dict(
-    put={z: p for p, z in WIN_PROBA_ZSCORE['short']['put'].items()},
-    call={z: p for p, z in WIN_PROBA_ZSCORE['short']['call'].items()},
-  )
-)
-
 NOTABLE_DELTA_MAX = .2
 
 FIG_WIDTH = 5 if IS_PHONE else 26 if IS_WIDESCREEN else 13.5
@@ -126,3 +89,45 @@ WATCHLIST = dict(
 
 DATE_FORMAT = '%Y-%m-%d'
 EASTERN_TZ = pytz.timezone('US/Eastern')
+
+
+################
+## Deprecated ##
+################
+PHI_ZSCORE = {
+  # Includes entire left tail aka values directly taken from Standard Normal Table.
+  1: -2.33,
+  5: -1.645,
+  10: -1.28,
+  15: -1.036,
+  16: -1,
+  50: 0,
+  84: 1,
+  85: 1.036,
+  90: 1.28,
+  95: 1.645,
+  99: 2.33,
+}
+
+WIN_PROBA_ZSCORE = dict(
+  short=dict(
+    # For short put (aka CSEP), to keep premium without assignment aka expire OTM:
+    #   - 84 win proba -> zscore = -1
+    #   - 50 win proba -> zscore = 0
+    #   - 16 win proba -> zscore = 1
+    put={p: -1*z for p, z in PHI_ZSCORE.items()},
+  
+    # For short call (aka CC), to keep premium without assignment aka expire OTM:
+    #   - 84 win proba -> zscore = 1
+    #   - 50 win proba -> zscore = 0
+    #   - 16 win proba -> zscore = -1
+    call=PHI_ZSCORE.copy(),
+  )
+)
+ZSCORE_WIN_PROBA = dict(
+  short=dict(
+    put={z: p for p, z in WIN_PROBA_ZSCORE['short']['put'].items()},
+    call={z: p for p, z in WIN_PROBA_ZSCORE['short']['call'].items()},
+  )
+)
+

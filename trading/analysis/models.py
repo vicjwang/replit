@@ -20,7 +20,7 @@ from constants import (
   SIGMA_LOWER,
 )
 
-from utils import calc_expected_price, strformat
+from utils import calc_expected_price, strformat, get_tscore
 
 
 class PriceModel:
@@ -69,12 +69,12 @@ class PriceModel:
   def get_daily_stdev(self):
     return self.daily_stdev
 
-  def predict_price(self, days, tscore=None, zscore=None, from_price=None):
+  def predict_price(self, days, tscore=None, from_price=None):
     if from_price is None:
       from_price = self.get_latest_price()
     mu = self.get_daily_mean()
     sigma = self.get_daily_stdev()
-    target_price = calc_expected_price(from_price, mu, sigma, days, tscore=tscore, zscore=zscore)
+    target_price = calc_expected_price(from_price, mu, sigma, days, tscore=tscore)
     return target_price
 
   def __str__(self):
@@ -131,14 +131,13 @@ class PriceModel:
     plt.hist(returns, bins=x)
     plt.legend(title=f"Periods={periods}")
 
-  def calc_intraquarter_predict_price_accuracy(self, days, zscore, is_under=True):
-    # TODO(vjw): replace zscore with tscore?
+  def calc_intraquarter_predict_price_accuracy(self, days, tscore, is_under=True):
     assert days < 60
     
     df = self.prices_df[self.avoid_earnings_mask]
 
-    over_count = 0
-    under_count = 0
+    num_over = 0
+    num_under = 0
     for i, this_earnings_date in enumerate(self.past_earnings_dates[:-1]):
       prev_earnings_date = self.past_earnings_dates[i + 1]
 
@@ -149,28 +148,27 @@ class PriceModel:
       pred_df = pd.DataFrame()
       pred_df['date'] = (quarter_df['date'] + timedelta(days=days*7/5)).dt.date
       # Axis=1 to apply to each row.
-      pred_df['predicted'] = quarter_df.apply(lambda row: self.predict_price(days, zscore, row['close']), axis=1)
+      pred_df['predicted'] = quarter_df.apply(lambda row: self.predict_price(days, tscore, row['close']), axis=1)
       
       compare_df = df[quarter_mask].set_index('date').join(pred_df.set_index('date'))
 
-      over_count += sum(compare_df['predicted'] < compare_df['close'])
-      under_count += sum(compare_df['predicted'] >= compare_df['close'])
+      num_over += sum(compare_df['predicted'] < compare_df['close'])
+      num_under += sum(compare_df['predicted'] >= compare_df['close'])
 
-    total = over_count + under_count
-    return under_count / total if is_under else over_count / total
+    total = num_over + num_under
+    return num_under / total if is_under else num_over / total
 
 
 if __name__ == '__main__':
 
   model = PriceModel('NVDA')
-  model.graph_intraquarter_returns(20, fig_num=1)
-  model.calc_intraquarter_predict_price_accuracy(20, 1)
-#  model.graph_intraquarter_returns(30, fig_num=2)
-#  model.calc_intraquarter_predict_price_accuracy(30, 1)
-#  model.graph_intraquarter_returns(40, fig_num=3)
-#  model.calc_intraquarter_predict_price_accuracy(40, 1)
+  sig_level = 0.9
+
+  for i, dte in enumerate([10, 20, 30, 40]):
+    model.graph_intraquarter_returns(dte, fig_num=i + 1)
+    tscore = get_tscore(sig_level, dte - 1)
+    print(model.calc_intraquarter_predict_price_accuracy(dte, tscore))
 
   print('Rendering plot in Output tab...')
   plt.tight_layout()
-#  plt.show()
-
+  plt.show()

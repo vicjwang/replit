@@ -1,4 +1,4 @@
-import os
+from datetime import datetime
 
 
 IS_WIDESCREEN = True
@@ -15,3 +15,5 @@ USE_EARNINGS_CSV = False
 
 FROZEN_TEST_DATE = '2024-07-22'
 CACHE_DIR = './cache'
+
+NOW = datetime.utcnow()

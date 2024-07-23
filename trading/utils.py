@@ -36,16 +36,10 @@ def get_target_colname(sig_level):
 
 
 def is_market_hours():
-
-  if config.ENV == 'test':
-    return False
-
   market_open = time(9, 30)
   market_close = time(16, 0)
-
-  now = datetime.now(EASTERN_TZ)
-
-  return now.weekday() in (0,1,2,3,4) and market_open <= now.time() <= market_close
+  eastern_now = config.NOW.astimezone(EASTERN_TZ)
+  return eastern_now.weekday() in (0,1,2,3,4) and market_open <= eastern_now.time() <= market_close
 
 
 def count_trading_days(expiry_on):

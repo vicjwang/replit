@@ -125,8 +125,10 @@ def fetch_past_earnings_dates(symbol):
 @cached()
 def get_next_earnings_date(symbol):
   earnings_dates = fetch_earnings_dates(symbol, start_date=config.REGIME_START_DATE)
-  ret = [x for x in pd.to_datetime(earnings_dates) if x > datetime.now()][-1]
-  return ret
+  today_str = str(datetime.now().date())
+  future_dates = [x for x in earnings_dates if x >= today_str]
+  ret = future_dates[-1]
+  return pd.to_datetime(ret)
 
 
 def fetch_valuation_ratios(symbol):

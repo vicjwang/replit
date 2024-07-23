@@ -36,20 +36,14 @@ def get_target_colname(sig_level):
 
 
 def is_market_hours():
-
-  if config.ENV == 'test':
-    return False
-
   market_open = time(9, 30)
   market_close = time(16, 0)
-
-  now = datetime.now(EASTERN_TZ)
-
-  return now.weekday() in (0,1,2,3,4) and market_open <= now.time() <= market_close
+  eastern_now = config.NOW.astimezone(EASTERN_TZ)
+  return eastern_now.weekday() in (0,1,2,3,4) and market_open <= eastern_now.time() <= market_close
 
 
 def count_trading_days(expiry_on):
-  start = np.datetime64(datetime.now().date(), 'D')
+  start = np.datetime64(config.NOW.date(), 'D')
   end = np.datetime64(expiry_on + timedelta(days=1), 'D')
   
   trading_dte = np.busday_count(start, end)
@@ -60,7 +54,7 @@ def calc_annual_roi(contract) -> float:
   strike = contract['strike']
   expiry_date = datetime.strptime(contract['expiration_date'], DATE_FORMAT).date()
   bid = contract['bid']
-  dte = (expiry_date - datetime.now().date()).days
+  dte = (expiry_date - config.NOW.date()).days
   
   roi = bid / strike
   annual_roi = roi * 365 / dte if dte > 0 else roi * 365

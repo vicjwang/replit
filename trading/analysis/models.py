@@ -11,7 +11,7 @@ from datetime import timedelta
 from vendors.tradier import (
   fetch_historical_prices,
   fetch_past_earnings_dates,
-  get_next_earnings_date,
+  fetch_next_earnings_date,
 )
 
 from constants import (
@@ -36,7 +36,7 @@ class PriceModel:
 
     # Sorted in most recent first.
     self.past_earnings_dates = fetch_past_earnings_dates(symbol)
-    self.next_earnings_date = get_next_earnings_date(symbol)
+    self.next_earnings_date = fetch_next_earnings_date(symbol)
 
     # Some helper columns.
     self.prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))

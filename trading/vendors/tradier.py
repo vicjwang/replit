@@ -70,7 +70,7 @@ def fetch_options_chain(symbol, expiry_date, option_type=None, target_price=None
 
 
 @cached()
-def fetch_earnings_dates(symbol, start_date:str=None):
+def fetch_earnings_dates(symbol, after:str=None):
 
   if config.USE_EARNINGS_CSV:
     earnings_dates = read_earnings_dates_from_csv(symbol)
@@ -94,38 +94,27 @@ def fetch_earnings_dates(symbol, start_date:str=None):
   earnings_dates = set()
   for event in events:
     begin_dt = event['begin_date_time']
-    if start_date and begin_dt <= start_date:
+    if after and begin_dt <= after:
       continue
 
     if event['event_type'] in {7,8,9,10}:
       earnings_dates.add(begin_dt)
 
   ret = list(reversed(sorted(earnings_dates)))
-  return ret
-
-
-def fetch_next_earnings_date(symbol):
-  events = fetch_earnings_dates(symbol)
-
-  today_datestr = datetime.now().strftime(DATE_FORMAT)
-
-  future_events = sorted([event for event in events if event['begin_date_time'] > today_datestr], key=lambda event: event['begin_date_time'])
-
-  next_event = sorted(relevant_events, key=lambda x: x['begin_date_time'])[0]['begin_date_time']
-  today_str = str(datetime.now().date())
-  return next_event if next_event > today_str else None
+  return pd.to_datetime(ret)
 
 
 @cached()
 def fetch_past_earnings_dates(symbol):
-  earnings_dates = fetch_earnings_dates(symbol, start_date=config.REGIME_START_DATE)
-  return [x for x in pd.to_datetime(earnings_dates) if x < datetime.now()]
+  earnings_dates = fetch_earnings_dates(symbol, after=config.REGIME_START_DATE)
+  return [x for x in earnings_dates if x < config.NOW]
 
 
-@cached()
-def get_next_earnings_date(symbol):
-  earnings_dates = fetch_earnings_dates(symbol, start_date=config.REGIME_START_DATE)
-  ret = [x for x in pd.to_datetime(earnings_dates) if x > datetime.now()][-1]
+def fetch_next_earnings_date(symbol):
+  earnings_dates = fetch_earnings_dates(symbol, after=config.REGIME_START_DATE)
+  today = pd.Timestamp(config.NOW.date())
+  future_dates = [x for x in earnings_dates if x >= today]
+  ret = future_dates[-1]
   return ret
 
 

@@ -54,7 +54,9 @@ def scan(snapshot_fn, tickers, figman):
       print(strformat(symbol, f"Skipping - {e}"))
       if config.IS_DEBUG:
         traceback.print_exc()
-      continue
+        raise e
+      else:
+        continue
 
     figman.add_graph_as_ax(snapshot.graph_roi_vs_expiry)
     print(strformat(symbol, f"Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})\n \"{snapshot.title}\"\n"))
@@ -100,7 +102,9 @@ def deep_dive(strategy, option_type, sig_levels, figman):
       print(strformat(symbol, f"Skipping - {e}"))
       if config.IS_DEBUG:
         traceback.print_exc()
-      continue
+        raise e
+      else:
+        continue
   print()
 
 

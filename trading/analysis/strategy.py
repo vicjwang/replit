@@ -36,7 +36,10 @@ def sell_intraquarter_derivatives(symbol):
   latest_price = price_model.get_latest_price()
   latest_change = price_model.get_latest_change()
 
-  if (option_type == 'call' and latest_change < 0) or (option_type == 'put' and latest_change > 0):
+  sigma = price_model.get_daily_stdev()
+  min_change = latest_price * sigma * config.MIN_ZSCORE
+
+  if (option_type == 'call' and latest_change < min_change) or (option_type == 'put' and latest_change > -1*min_change):
     raise ValueError(f'{symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
 
   next_earnings_date = price_model.get_next_earnings_date()

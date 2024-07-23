@@ -136,7 +136,7 @@ class DerivativeStrategyBase:
     next_earnings = self.price_model.get_next_earnings_date()
 
     win_proba = get_win_proba(self.side, option_type, sig_level)
-    title = f"{self.symbol}: {self.side.title()} {option_type.title()} Strikes @ {win_proba}% Win Proba"
+    title = f"{self.symbol}: {self.side.title()} {option_type.title()} Strikes @ {win_proba*100:.0f}% Win Proba"
     text = '\n'.join((
       f'${latest_price}, {latest_change * 100:.2f}%',
       f'Next earnings: {next_earnings.strftime(DATE_FORMAT)}',

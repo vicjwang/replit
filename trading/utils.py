@@ -43,7 +43,7 @@ def is_market_hours():
 
 
 def count_trading_days(expiry_on):
-  start = np.datetime64(datetime.now().date(), 'D')
+  start = np.datetime64(config.NOW.date(), 'D')
   end = np.datetime64(expiry_on + timedelta(days=1), 'D')
   
   trading_dte = np.busday_count(start, end)
@@ -54,7 +54,7 @@ def calc_annual_roi(contract) -> float:
   strike = contract['strike']
   expiry_date = datetime.strptime(contract['expiration_date'], DATE_FORMAT).date()
   bid = contract['bid']
-  dte = (expiry_date - datetime.now().date()).days
+  dte = (expiry_date - config.NOW.date()).days
   
   roi = bid / strike
   annual_roi = roi * 365 / dte if dte > 0 else roi * 365

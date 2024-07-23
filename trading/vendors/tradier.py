@@ -107,24 +107,24 @@ def fetch_earnings_dates(symbol, start_date:str=None):
 def fetch_next_earnings_date(symbol):
   events = fetch_earnings_dates(symbol)
 
-  today_datestr = datetime.now().strftime(DATE_FORMAT)
+  today_datestr = config.NOW.strftime(DATE_FORMAT)
 
   future_events = sorted([event for event in events if event['begin_date_time'] > today_datestr], key=lambda event: event['begin_date_time'])
 
   next_event = sorted(relevant_events, key=lambda x: x['begin_date_time'])[0]['begin_date_time']
-  today_str = str(datetime.now().date())
+  today_str = str(config.NOW.date())
   return next_event if next_event > today_str else None
 
 
 @cached()
 def fetch_past_earnings_dates(symbol):
   earnings_dates = fetch_earnings_dates(symbol, start_date=config.REGIME_START_DATE)
-  return [x for x in pd.to_datetime(earnings_dates) if x < datetime.now()]
+  return [x for x in pd.to_datetime(earnings_dates) if x < config.NOW]
 
 
 def get_next_earnings_date(symbol):
   earnings_dates = fetch_earnings_dates(symbol, start_date=config.REGIME_START_DATE)
-  today_str = str(datetime.now().date())
+  today_str = str(config.NOW.date())
   future_dates = [x for x in earnings_dates if x >= today_str]
   ret = future_dates[-1]
   return pd.to_datetime(ret)

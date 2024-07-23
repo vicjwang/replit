@@ -189,7 +189,7 @@ class DerivativeStrategySnapshot:
 
     cursor = mplcursors.cursor(scatter, hover=True)
 
-    dtes = self.df['expiration_date'].apply(lambda d: (d - datetime.now()).days + 1)
+    dtes = self.df['expiration_date'].apply(lambda d: (d - config.NOW).days + 1)
     vols = self.df['smv_vol']
     volumes = self.df['volume']
     thetas = self.df['theta']

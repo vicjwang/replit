@@ -56,7 +56,7 @@ def cached(force_refresh=False, use_time=False):
     def wrapped(*args, **kwargs):   # define a wrapper that will finally call "fn" with all arguments
 
       # Create cache folder if not exist.
-      today_datestr = datetime.now().strftime('%Y%m%d')
+      today_datestr = config.NOW.strftime('%Y%m%d')
       cache_dir = os.path.join(config.CACHE_DIR, today_datestr)
       if not os.path.exists(cache_dir):
         subprocess.run(['mkdir', cache_dir])
@@ -66,7 +66,7 @@ def cached(force_refresh=False, use_time=False):
       kwstr = '_'.join([str(v) for v in kwargs.values()])
       filename_parts = [part for part in [fn.__name__, argstr, kwstr] if part]
       if use_time:
-        now_timestr = datetime.now().strftime('%H%M')
+        now_timestr = config.NOW.strftime('%H%M')
         filename_parts = [now_timestr, *filename_parts]
 
       cache_filename = '-'.join(filename_parts) + '.pkl'

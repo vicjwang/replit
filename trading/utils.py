@@ -26,6 +26,8 @@ def get_win_proba(side, option_type, sig_level):
 
 
 def get_tscore(a, dof):
+  if dof == 1:
+    raise ValueError('No T critical value exists for dof=1')
   return stats.t.ppf(a, dof)
 
 

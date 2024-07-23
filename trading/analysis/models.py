@@ -132,6 +132,7 @@ class PriceModel:
     plt.legend(title=f"Periods={periods}")
 
   def calc_intraquarter_predict_price_accuracy(self, days, zscore, is_under=True):
+    # TODO(vjw): replace zscore with tscore?
     assert days < 60
     
     df = self.prices_df[self.avoid_earnings_mask]

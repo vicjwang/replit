@@ -14,6 +14,17 @@ def strformat(symbol, s):
     return text
 
 
+def get_sig_level(side, option_type, win_proba):
+  if side == 'long' and option_type == 'call':
+    return 1 - win_proba
+  if side == 'long' and option_type == 'put':
+    return win_proba
+  if side == 'short' and option_type == 'call':
+    return win_proba
+  if side == 'short' and option_type == 'put':
+    return 1 - win_proba
+
+
 def get_win_proba(side, option_type, sig_level):
   if side == 'long' and option_type == 'call':
     return 1 - sig_level
@@ -34,7 +45,7 @@ def get_tscore(a, dof):
 
 
 def get_target_colname(sig_level):
-  return f"{sig_level}_target"
+  return f"{round(sig_level, 2)}_target"
 
 
 def is_market_hours():

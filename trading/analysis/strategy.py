@@ -19,6 +19,7 @@ from constants import (
   WORTHY_MIN_ROI,
 )
 from analysis.derivative_strategy import DerivativeStrategyBase
+from utils import get_sig_level
 
 
 def sell_intraquarter_derivatives(symbol):
@@ -37,14 +38,15 @@ def sell_intraquarter_derivatives(symbol):
   latest_change = price_model.get_latest_change()
 
   sigma = price_model.get_daily_stdev()
-  min_change = latest_price * sigma * config.MIN_ZSCORE
+  min_change = sigma * config.MIN_ZSCORE
 
   if (option_type == 'call' and latest_change < min_change) or (option_type == 'put' and latest_change > -1*min_change):
     raise ValueError(f'{symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')
 
   next_earnings_date = price_model.get_next_earnings_date()
 
-  return deriv_strat.build_snapshot(option_type, 0.15, expiry_before=next_earnings_date)
+  sig_level = get_sig_level(side, option_type, config.MY_WIN_PROBA)
+  return deriv_strat.build_snapshot(option_type, sig_level, expiry_before=next_earnings_date)
 
 
 def sell_LTDITM_puts(symbol):

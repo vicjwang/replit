@@ -5,7 +5,7 @@ import config
 
 from analysis import strategy as Strategy
 from graphing import FigureManager
-from main import scan, deep_dive_puts
+from main import scan, deep_dive_puts, deep_dive_calls
 
 
 class TestMain:
@@ -33,3 +33,9 @@ class TestMain:
     strat = deep_dive_puts
     strat(tickers, figman)
     figman.render()
+
+  def test_deep_dive_calls_success(self, tickers, figman):
+    strat = deep_dive_calls
+    strat(tickers, figman)
+    figman.render()
+

@@ -81,8 +81,9 @@ def deep_dive_calls(tickers, figman):
     if symbol not in COVERED_CALLS:
       continue
 
+    strat = Strategy.DerivativeStrategyBase(symbol, side=SIDE_SHORT)
     sig_levels = [0.85, 0.90, 0.95, 0.975, 0.99]
-    deep_dive(symbol, 'call', sig_levels, figman)
+    deep_dive(strat, 'call', sig_levels, figman)
 
 
 def deep_dive(strategy, option_type, sig_levels, figman):

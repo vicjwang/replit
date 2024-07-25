@@ -12,6 +12,7 @@ from vendors.tradier import (
   fetch_historical_prices,
   fetch_past_earnings_dates,
   fetch_next_earnings_date,
+  fetch_latest_price,
 )
 
 from constants import (
@@ -54,14 +55,19 @@ class PriceModel:
     self.daily_mean = self.prices_df[self.avoid_earnings_mask][self._COLNAME_DAILY_CHANGE].mean()
     self.daily_stdev = self.prices_df[self.avoid_earnings_mask][self._COLNAME_DAILY_CHANGE].std()
 
+    # Ensure last row is always *previous* trading day.
+    if self.prices_df.iloc[-1]['date'] == pd.Timestamp(config.NOW.date()):
+      self.prices_df = self.prices_df.drop(self.prices_df.index[-1])
+
   def get_next_earnings_date(self):
     return self.next_earnings_date
   
   def get_latest_price(self):
-    return self.prices_df.iloc[-1][self._COLNAME_CLOSE]
+    return fetch_latest_price(self.symbol)
 
   def get_latest_change(self):
-    return self.prices_df.iloc[-1][self._COLNAME_DAILY_CHANGE]
+    last_close = self.prices_df.iloc[-1][self._COLNAME_CLOSE]
+    return (self.get_latest_price() - last_close) / last_close
 
   def get_daily_mean(self):
     return self.daily_mean

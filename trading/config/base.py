@@ -3,7 +3,7 @@ from datetime import datetime
 
 IS_WIDESCREEN = True
 IS_PHONE = False
-MY_WIN_PROBA = 0.95
+MY_WIN_PROBA = 0.85
 SKIP_GRAPHS = False
 SHOW_GRAPHS = True
 IS_DEBUG = False

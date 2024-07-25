@@ -13,6 +13,7 @@ from constants import (
   MU,
   SIGMA_LOWER,
   MAX_STRIKE,
+  PHI_ZSCORE,
   T_SIG_LEVELS,
   WIN_PROBA_ZSCORE,
   WORTHY_MIN_BID,
@@ -72,9 +73,11 @@ class DerivativeStrategyBase:
         continue
 
       trading_dte = count_trading_days(expiry_date)
+      dof = trading_dte - 1
       for sig_level in sorted(T_SIG_LEVELS):
-        tscore = get_tscore(sig_level, trading_dte - 1)
-        target_strike = self.price_model.predict_price(trading_dte, tscore=tscore)
+        # T-score does not exist for dof = 0 so default to Normal since sigma is 1 day move anyways.
+        xscore = get_tscore(sig_level, dof) or PHI_ZSCORE[sig_level]
+        target_strike = self.price_model.predict_price(trading_dte, xscore)
         colname = get_target_colname(sig_level)
         chain_df[colname] = target_strike
 

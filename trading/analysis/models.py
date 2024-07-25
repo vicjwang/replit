@@ -20,7 +20,7 @@ from constants import (
   SIGMA_LOWER,
 )
 
-from utils import calc_expected_price, strformat, get_tscore
+from utils import calc_target_price, strformat, get_tscore
 
 
 class PriceModel:
@@ -69,12 +69,12 @@ class PriceModel:
   def get_daily_stdev(self):
     return self.daily_stdev
 
-  def predict_price(self, days, tscore=None, from_price=None):
+  def predict_price(self, days, xscore, from_price=None):
     if from_price is None:
       from_price = self.get_latest_price()
     mu = self.get_daily_mean()
     sigma = self.get_daily_stdev()
-    target_price = calc_expected_price(from_price, mu, sigma, days, tscore=tscore)
+    target_price = calc_target_price(from_price, mu, sigma, days, xscore)
     return target_price
 
   def __str__(self):

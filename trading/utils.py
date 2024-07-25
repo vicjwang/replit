@@ -39,13 +39,13 @@ def get_win_proba(side, option_type, sig_level):
 def get_tscore(a, dof):
   # a := alpha aka "significance level" of "single tail"
   # dof := degrees of freedom
-  if dof == 1:
-    raise ValueError('No T critical value exists for dof=1')
+  if dof == 0:
+    return None
   return stats.t.ppf(a, dof)
 
 
 def get_target_colname(sig_level):
-  return f"{round(sig_level, 2)}_target"
+  return f"{round(sig_level, 3)}_target"
 
 
 def is_market_hours():
@@ -80,11 +80,12 @@ def printout(s=''):
   print(s)
 
 
-def calc_expected_price(current_price, mu, sigma, n, tscore=None):
+def calc_target_price(current_price, mu, sigma, n, xscore):
+  # xscore := either tscore or zscore
   # Mean is linear with n.
   # Sigma is linear with sqrt(n).
-  exp_strike = current_price * (1 + n*mu + tscore*math.sqrt(n)*sigma)
-  return exp_strike
+  expected_price = current_price * (1 + n*mu + xscore*math.sqrt(n)*sigma)
+  return expected_price
 
 
 def read_earnings_dates_from_csv(symbol):

@@ -7,5 +7,4 @@ IS_DEBUG = True
 MIN_ZSCORE = 0
 MY_WIN_PROBA = 0.90
 
-#NOW = datetime(2024, 7, 22)
-NOW = datetime(2024, 7, 23)
+NOW = datetime(2024, 7, 25)

@@ -12,7 +12,7 @@ from vendors.tradier import (
   fetch_historical_prices,
   fetch_past_earnings_dates,
   fetch_next_earnings_date,
-  fetch_last_price,
+  fetch_latest_price,
 )
 
 from constants import (
@@ -63,7 +63,7 @@ class PriceModel:
     return self.next_earnings_date
   
   def get_latest_price(self):
-    return fetch_last_price(self.symbol)
+    return fetch_latest_price(self.symbol)
 
   def get_latest_change(self):
     last_close = self.prices_df.iloc[-1][self._COLNAME_CLOSE]

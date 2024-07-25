@@ -12,12 +12,8 @@ from constants import (
   DELTA_UPPER,
   MU,
   SIGMA_LOWER,
-  MAX_STRIKE,
   PHI_ZSCORE,
   T_SIG_LEVELS,
-  WIN_PROBA_ZSCORE,
-  WORTHY_MIN_BID,
-  WORTHY_MIN_ROI,
 )
 from utils import (
   count_trading_days,
@@ -106,16 +102,16 @@ class DerivativeStrategyBase:
     target_colname = get_target_colname(sig_level)
     graph_df = self.df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])
 
-    strike_mask = (graph_df['strike'] < MAX_STRIKE)
+    strike_mask = (graph_df['strike'] < config.MAX_STRIKE)
 
     option_type_mask = (graph_df['option_type'] == option_type)
 
     # ROI needs to be worth it plus ROI becomes linear when too itm so remove.
-    roi_mask = (graph_df['yoy_roi'] > WORTHY_MIN_ROI)
+    roi_mask = (graph_df['yoy_roi'] > config.WORTHY_MIN_ROI)
     otm_only_mask = (graph_df['yoy_roi'] < 1)
 
     # Cash needs to be worth it per contract.
-    cash_mask = (graph_df['bid'] > WORTHY_MIN_BID) 
+    cash_mask = (graph_df['bid'] > config.WORTHY_MIN_BID)
 
     mask = option_type_mask & strike_mask & cash_mask & roi_mask & otm_only_mask
 

@@ -5,10 +5,6 @@ from collections import namedtuple
 from config import IS_WIDESCREEN, IS_PHONE
 
 
-WORTHY_MIN_BID = 0.8
-WORTHY_MIN_ROI = 0.2
-MAX_STRIKE = 280
-
 T_SIG_LEVELS = [0.01, .025, 0.05, 0.10, 0.15, 0.85, 0.90, 0.95, 0.975, 0.99]
 
 PHI_ZSCORE = {
@@ -27,8 +23,6 @@ PHI_ZSCORE = {
   0.975: 1.96,
   0.99: 2.33,
 }
-
-NOTABLE_DELTA_MAX = .2
 
 FIG_WIDTH = 5 if IS_PHONE else 26 if IS_WIDESCREEN else 13.5
 FIG_HEIGHT = 6 if IS_PHONE else 10 if IS_WIDESCREEN else 7.5

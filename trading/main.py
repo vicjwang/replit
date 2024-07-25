@@ -2,18 +2,16 @@ import argparse
 import sys
 import traceback
 
+import config
+
 from collections import defaultdict
 
 from analysis import strategy as Strategy
-import config
 from constants import (
   COVERED_CALLS,
   WATCHLIST,
   SIDE_SHORT,
   STOCKS,
-  T_SIG_LEVELS,
-  WORTHY_MIN_BID,
-  WORTHY_MIN_ROI,
 )
 from graphing import FigureManager
 
@@ -59,7 +57,7 @@ def scan(snapshot_fn, tickers, figman):
         continue
 
     figman.add_graph_as_ax(snapshot.graph_roi_vs_expiry)
-    print(strformat(symbol, f"Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})\n \"{snapshot.title}\"\n"))
+    print(strformat(symbol, f"Adding subplot (WORTHY_MIN_BID={config.WORTHY_MIN_BID}, WORTHY_MIN_ROI={config.WORTHY_MIN_ROI})\n \"{snapshot.title}\"\n"))
 
 
 def deep_dive_puts(tickers, figman):
@@ -96,7 +94,7 @@ def deep_dive(strategy, option_type, sig_levels, figman):
     try:
       snapshot = strategy.build_snapshot(option_type, sig_level)
       figman.add_graph_as_ax(snapshot.graph_roi_vs_expiry)
-      print(strformat(symbol, f"Adding subplot (WORTHY_MIN_BID={WORTHY_MIN_BID}, WORTHY_MIN_ROI={WORTHY_MIN_ROI})\n \"{snapshot.title}\""))
+      print(strformat(symbol, f"Adding subplot (WORTHY_MIN_BID={config.WORTHY_MIN_BID}, WORTHY_MIN_ROI={config.WORTHY_MIN_ROI})\n \"{snapshot.title}\""))
 
     except Exception as e:
       print(strformat(symbol, f"Skipping - {e}"))

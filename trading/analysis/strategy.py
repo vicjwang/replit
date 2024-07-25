@@ -5,19 +5,7 @@ import pandas as pd
 import config
 
 from analysis.models import PriceModel
-from constants import (
-  COVERED_CALLS,
-  DATE_FORMAT,
-  DELTA_UPPER,
-  PHI_ZSCORE,
-  MU,
-  SIDE_SHORT,
-  SIGMA_LOWER,
-  MAX_STRIKE,
-  WIN_PROBA_ZSCORE,
-  WORTHY_MIN_BID,
-  WORTHY_MIN_ROI,
-)
+from constants import COVERED_CALLS, SIDE_SHORT
 from analysis.derivative_strategy import DerivativeStrategyBase
 from utils import get_sig_level
 

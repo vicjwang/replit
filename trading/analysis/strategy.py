@@ -10,11 +10,14 @@ from analysis.derivative_strategy import DerivativeStrategyBase
 from utils import get_sig_level
 
 
-def sell_intraquarter_derivatives(symbol):
+def sell_intraquarter_derivatives(symbol, win_proba=None):
   if symbol in COVERED_CALLS:
     option_type = 'call'
   else:
     option_type = 'put'
+
+  if win_proba is None:
+    win_proba = config.MY_WIN_PROBA
 
   side = SIDE_SHORT
 
@@ -33,11 +36,11 @@ def sell_intraquarter_derivatives(symbol):
 
   next_earnings_date = price_model.get_next_earnings_date()
 
-  sig_level = get_sig_level(side, option_type, config.MY_WIN_PROBA)
+  sig_level = get_sig_level(side, option_type, win_proba)
   return deriv_strat.build_snapshot(option_type, sig_level, expiry_before=next_earnings_date)
 
 
-def sell_LTDITM_puts(symbol):
+def sell_LTDITM_puts(symbol, win_proba=None):
   # Look at far away deep ITM Puts.
   side = SIDE_SHORT
   option_type = 'put'
@@ -47,7 +50,7 @@ def sell_LTDITM_puts(symbol):
   return deriv_strat.build_snapshot(option_type, 0.15, expiry_after=config.MIN_EXPIRY_DATESTR)
 
 
-def sell_LTDOTM_calls(symbol):
+def sell_LTDOTM_calls(symbol, win_proba=None):
   # NOTE: YoY ROI generally not worth it (<.05)
   side = SIDE_SHORT
   option_type = 'call'

@@ -1,7 +1,7 @@
 
 Usage:
 "Scan all notable tickers for intraquarter options"
-$ poetry run python main.py scan -s 0
+$ poetry run python main.py scan -s 0 -p 0.9
 
 "Deep dive on MDB and NVDA for puts only"
 $ poetry run python main.py dd -s 1 -t mdb,nvda

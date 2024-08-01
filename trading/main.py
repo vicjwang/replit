@@ -35,7 +35,7 @@ def get_stocks(tickers=None):
   return ret
 
 
-def scan(snapshot_fn, tickers, figman):
+def scan(snapshot_fn, tickers, figman, win_proba=None):
   # Scan across many stocks.
   # One figure will show same strategy across multiple stocks.
   figman.add_empty_figure(snapshot_fn.__name__)
@@ -46,7 +46,7 @@ def scan(snapshot_fn, tickers, figman):
     symbol = stock.symbol
 
     try:
-      snapshot = snapshot_fn(symbol)
+      snapshot = snapshot_fn(symbol, win_proba=win_proba)
 
     except Exception as e:
       print(strformat(symbol, f"Skipping - {e}"))
@@ -113,12 +113,14 @@ if __name__ == '__main__':
   parser.add_argument('command')
   parser.add_argument('-t', '--tickers')
   parser.add_argument('-s', '--strategy')
+  parser.add_argument('-p', '--proba')
 
   args = parser.parse_args()
 
   cmd = args.command
   tickers = args.tickers.upper().split(',') if args.tickers else None
   strategy_input = args.strategy
+  win_proba = float(args.proba) if args.proba else None
 
   figman = FigureManager()
 
@@ -134,7 +136,7 @@ if __name__ == '__main__':
         scan(strat, tickers, figman)
     elif strategy_input.isdigit():
       strat = scan_strats[int(strategy_input)]
-      scan(strat, tickers, figman)
+      scan(strat, tickers, figman, win_proba=win_proba)
     else:
       print(f"Invalid strategy:", ' '.join([f"{i}={strat.__name__}" for i, strat in enumerate(scan_strats)]))
       sys.exit(1)

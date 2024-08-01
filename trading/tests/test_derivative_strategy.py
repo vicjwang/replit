@@ -20,8 +20,6 @@ class TestDerivativeStrategyBase:
 
     result = snapshot.df
     expected = pd.read_csv(SNAPSHOT_CSV, parse_dates=['expiration_date'])
-    print('vjw res\n', result.head())
-    print('vjw exp\n', expected.head())
 
     pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
 

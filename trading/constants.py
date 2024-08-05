@@ -5,7 +5,7 @@ from collections import namedtuple
 from config import IS_WIDESCREEN, IS_PHONE
 
 
-T_SIG_LEVELS = [0.01, .025, 0.05, 0.10, 0.15, 0.85, 0.90, 0.95, 0.975, 0.99]
+T_SIG_LEVELS = [0.01, .025, 0.05, 0.10, 0.15, 0.5, 0.85, 0.90, 0.95, 0.975, 0.99]
 
 PHI_ZSCORE = {
   # Includes entire left tail aka values directly taken from Standard Normal Table.
@@ -15,7 +15,7 @@ PHI_ZSCORE = {
   0.1: -1.28,
   0.15: -1.036,
   0.16: -1,
-  0.50: 0,
+  0.5: 0,
   0.84: 1,
   0.85: 1.036,
   0.90: 1.28,
@@ -74,6 +74,7 @@ COVERED_CALLS = dict(
   OKTA=1,  # cc
   SNAP=1,  # cc
   TWLO=1,  # cc
+  CRWD=1,
 )
 
 WATCHLIST = dict(

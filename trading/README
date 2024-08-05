@@ -9,5 +9,8 @@ $ poetry run python main.py dd -s 1 -t mdb,nvda
 Run tests:
 $ ENV=test poetry run pytest -k test_main
 
+Remake snapshot for test_build_snapshot (say after adding new column):
+$ ENV=test poetry run python -m tests.test_derivative_strategy
+
 Run profiler:
 $ ENV=test poetry run scalene main.py scan -s 0 -t mdb

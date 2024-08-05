@@ -82,7 +82,7 @@ def deep_dive_calls(tickers, figman):
       continue
 
     strat = Strategy.DerivativeStrategyBase(symbol, side=SIDE_SHORT)
-    sig_levels = [0.85, 0.90, 0.95, 0.975, 0.99]
+    sig_levels = [0.5, 0.85, 0.90, 0.95, 0.975, 0.99]
     deep_dive(strat, 'call', sig_levels, figman)
 
 

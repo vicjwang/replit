@@ -82,7 +82,6 @@ WATCHLIST = dict(
   ABNB=1,
   AMZN=1,
   CRM=1,
-  CRWD=1,
   DDOG=1,  # cc
   GOOG=1,
   GME=1,

@@ -30,10 +30,12 @@ from vendors.tradier import (
 
 class DerivativeStrategyBase:
   INCLUDE_COLUMNS = [
+    'description',
     'expiration_date',
     'option_type',
     'strike',
     'bid',
+    'ask',
     'volume',
     'greeks',
   ]

@@ -16,4 +16,4 @@ Run profiler:
 $ ENV=test poetry run scalene main.py scan -s 0 -t mdb
 
 "Find suitable options to roll"
-$ poetry run python -m analysis.roll -t MDB -e 2024-08-09 -k 250 -c 2
+$ poetry run python -m analysis.roll -t MDB -e 2024-08-09 -k 250 -c 2 -o call

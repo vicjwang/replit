@@ -34,6 +34,8 @@ DELTA_LOWER = '\u03B4'
 SIGMA_UPPER = '\u03A3'
 SIGMA_LOWER = '\u03C3'
 MU = '\u03BC'
+BOLD = '\033[1m'
+BOLD_END = '\033[0m'
 
 SIDE_SHORT = 'short'
 

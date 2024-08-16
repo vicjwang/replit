@@ -3,6 +3,8 @@ import pytest
 
 import config
 
+from unittest.mock import Mock, patch
+
 from analysis import strategy as Strategy
 from graphing import FigureManager
 from main import scan, deep_dive_puts, deep_dive_calls
@@ -23,10 +25,12 @@ class TestMain:
     scan(strat, tickers, figman)
     figman.render()
   
-  def test_scan_move_threshold_error(self, figman):
+  def test_scan_move_threshold_error(self, figman, tickers):
     strat = Strategy.sell_intraquarter_derivatives
-    tickers = ['MDB']
-    with pytest.raises(ValueError):
+    mock_model = Mock()
+    mock_model.get_latest_change.return_value = 0
+    mock_model.get_daily_stdev.return_value = 0
+    with patch('analysis.strategy.DerivativeStrategyBase.get_price_model', return_value=mock_model), pytest.raises(ValueError):
       scan(strat, tickers, figman)
 
   def test_deep_dive_puts_success(self, tickers, figman):

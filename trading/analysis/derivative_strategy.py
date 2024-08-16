@@ -65,7 +65,6 @@ class DerivativeStrategyBase:
       chain = fetch_options_chain(self.symbol, expiry_date.strftime(DATE_FORMAT))
       # Drop column if all values = nan.
       chain_df = pd.DataFrame.from_records(chain, columns=self.INCLUDE_COLUMNS).dropna(axis=1, how='all')
-#      chain_df = pd.DataFrame.from_records(chain).dropna(axis=1, how='all')
 
       if chain_df.empty:
         continue

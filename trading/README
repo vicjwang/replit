@@ -1,10 +1,10 @@
 
 Usage:
 "Scan all notable tickers for intraquarter options"
-$ poetry run python main.py scan -s 0 -p 0.9
+$ poetry run python main.py scan -s 0 -p 0.9 --save
 
 "Deep dive on MDB and NVDA for puts only"
-$ poetry run python main.py dd -s 1 -t mdb,nvda
+$ poetry run python main.py dd -s 1 -t mdb,nvda --save
 
 Run tests:
 $ ENV=test poetry run pytest -k test_main

@@ -20,6 +20,7 @@ MAX_STRIKE = 280
 
 FROZEN_TEST_DATE = '2024-07-22'
 CACHE_DIR = './cache'
+SAVE_DIR = '~/Downloads'
 
 TRADIER_THROTTLE_RATE = 120  # per minute
 TRADIER_THROTTLE_PERIOD = 60  # in seconds

@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 import traceback
 
@@ -35,10 +36,10 @@ def get_stocks(tickers=None):
   return ret
 
 
-def scan(snapshot_fn, tickers, figman, win_proba=None):
+def scan(snapshot_fn, tickers, figman, win_proba=None, savepath=None):
   # Scan across many stocks.
   # One figure will show same strategy across multiple stocks.
-  figman.add_empty_figure(snapshot_fn.__name__)
+  figman.add_empty_figure(snapshot_fn.__name__, savepath=savepath)
 
   stocks = get_stocks(tickers)
 
@@ -60,7 +61,7 @@ def scan(snapshot_fn, tickers, figman, win_proba=None):
     print(strformat(symbol, f"Adding subplot (WORTHY_MIN_BID={config.WORTHY_MIN_BID}, WORTHY_MIN_ROI={config.WORTHY_MIN_ROI})\n \"{snapshot.title}\"\n"))
 
 
-def deep_dive_puts(tickers, figman):
+def deep_dive_puts(tickers, figman, should_save=False):
   # Run strategy on one stock.
   # One figure will show same strategy for one stock.
 
@@ -71,10 +72,10 @@ def deep_dive_puts(tickers, figman):
     print(strat)
   
     sig_levels = [0.15, 0.10, 0.05, 0.01]
-    deep_dive(strat, 'put', sig_levels, figman)
+    deep_dive(strat, 'put', sig_levels, figman, should_save=should_save)
 
 
-def deep_dive_calls(tickers, figman):
+def deep_dive_calls(tickers, figman, should_save=False):
   stocks = get_stocks(tickers)
   for stock in stocks:
     symbol = stock.symbol
@@ -83,13 +84,14 @@ def deep_dive_calls(tickers, figman):
 
     strat = Strategy.DerivativeStrategyBase(symbol, side=SIDE_SHORT)
     sig_levels = [0.5, 0.85, 0.90, 0.95, 0.975, 0.99]
-    deep_dive(strat, 'call', sig_levels, figman)
+    deep_dive(strat, 'call', sig_levels, figman, should_save=should_save)
 
 
-def deep_dive(strategy, option_type, sig_levels, figman):
+def deep_dive(strategy, option_type, sig_levels, figman, should_save=False):
 
   symbol = strategy.symbol
-  figman.add_empty_figure(strformat(symbol, option_type))
+  savepath = os.path.expanduser(os.path.join(config.SAVE_DIR, f"dd-{symbol}-{option_type}-{config.NOW.date()}.pdf")) if should_save else None
+  figman.add_empty_figure(strformat(symbol, option_type), savepath=savepath)
 
   for sig_level in sig_levels:
     try:
@@ -114,6 +116,7 @@ if __name__ == '__main__':
   parser.add_argument('-t', '--tickers')
   parser.add_argument('-s', '--strategy')
   parser.add_argument('-p', '--proba')
+  parser.add_argument('--save', action='store_true')
 
   args = parser.parse_args()
 
@@ -121,6 +124,7 @@ if __name__ == '__main__':
   tickers = args.tickers.upper().split(',') if args.tickers else None
   strategy_input = args.strategy
   win_proba = float(args.proba) if args.proba else None
+  should_save = args.save
 
   figman = FigureManager()
 
@@ -133,10 +137,12 @@ if __name__ == '__main__':
 
     if strategy_input is None:
       for strat in scan_strats:
-        scan(strat, tickers, figman)
+        savepath = os.path.expanduser(os.path.join(config.SAVE_DIR, f"scan-{strat.__name__}-{config.NOW.date()}.pdf")) if should_save else None
+        scan(strat, tickers, figman, savepath=savepath)
     elif strategy_input.isdigit():
       strat = scan_strats[int(strategy_input)]
-      scan(strat, tickers, figman, win_proba=win_proba)
+      savepath = os.path.expanduser(os.path.join(config.SAVE_DIR, f"scan-{strat.__name__}-{config.NOW.date()}.pdf")) if should_save else None
+      scan(strat, tickers, figman, win_proba=win_proba, savepath=savepath)
     else:
       print(f"Invalid strategy:", ' '.join([f"{i}={strat.__name__}" for i, strat in enumerate(scan_strats)]))
       sys.exit(1)
@@ -152,7 +158,7 @@ if __name__ == '__main__':
         strat(tickers, figman)
     elif strategy_input.isdigit():
       strat = strats[int(strategy_input)]
-      strat(tickers, figman)
+      strat(tickers, figman, should_save=should_save)
     else:
       print(f"Invalid strategy:", ' '.join([f"{i}={strat.__name__}" for i, strat in enumerate(strats)]))
       sys.exit(1)

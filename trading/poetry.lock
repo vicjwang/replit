@@ -1593,6 +1593,16 @@ files = [
 ]
 
 [[package]]
+name = "ratelimit"
+version = "2.2.1"
+description = "API rate limit decorator"
+optional = false
+python-versions = "*"
+files = [
+    {file = "ratelimit-2.2.1.tar.gz", hash = "sha256:af8a9b64b821529aca09ebaf6d8d279100d766f19e90b5059ac6a718ca6dee42"},
+]
+
+[[package]]
 name = "regex"
 version = "2024.5.15"
 description = "Alternative regular expression module, to replace re."
@@ -2176,4 +2186,4 @@ requests = ">=2.31"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.11"
-content-hash = "3d52b19374ab4e69f0630f45432412b57e8299f6b7b8e6cea348d7c0499387ec"
+content-hash = "f7f8aa7d46f4acac02e832a6b9fc769c57f3fc927034737e4f70ad4e05f48543"

@@ -6,6 +6,8 @@ import pandas as pd
 
 import config
 
+from ratelimit import limits, sleep_and_retry
+
 from datetime import datetime
 from pandas.core.common import not_none
 from utils import is_market_hours
@@ -16,6 +18,8 @@ from decorators import cached
 TRADIER_API_KEY = os.environ['TRADIER_API_KEY']
 
 
+@sleep_and_retry
+@limits(calls=config.TRADIER_THROTTLE_RATE, period=config.TRADIER_THROTTLE_PERIOD)
 def make_api_request(endpoint, params):
   response = requests.get(
     endpoint,

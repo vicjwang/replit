@@ -5,6 +5,7 @@ import traceback
 import config
 
 from collections import defaultdict
+from joblib import Parallel, delayed
 
 from analysis import strategy as Strategy
 from constants import (
@@ -38,26 +39,29 @@ def get_stocks(tickers=None):
 def scan(snapshot_fn, tickers, figman, win_proba=None):
   # Scan across many stocks.
   # One figure will show same strategy across multiple stocks.
-  figman.add_empty_figure(snapshot_fn.__name__)
 
-  stocks = get_stocks(tickers)
-
-  for stock in stocks:
+  def process(stock):
     symbol = stock.symbol
 
     try:
-      snapshot = snapshot_fn(symbol, win_proba=win_proba)
+      return snapshot_fn(symbol, win_proba=win_proba)
 
     except Exception as e:
       print(strformat(symbol, f"Skipping - {e}"))
       if config.IS_DEBUG:
         traceback.print_exc()
         raise e
-      else:
-        continue
 
-    figman.add_graph_as_ax(snapshot.graph_roi_vs_expiry)
-    print(strformat(symbol, f"Adding subplot (WORTHY_MIN_BID={config.WORTHY_MIN_BID}, WORTHY_MIN_ROI={config.WORTHY_MIN_ROI})\n \"{snapshot.title}\"\n"))
+  figman.add_empty_figure(snapshot_fn.__name__)
+
+  stocks = get_stocks(tickers)
+
+  snapshots = Parallel(n_jobs=4)(delayed(process)(stock) for stock in stocks)
+
+  for snapshot in snapshots:
+    if snapshot:
+      figman.add_graph_as_ax(snapshot.graph_roi_vs_expiry)
+      print(strformat(snapshot.symbol, f"Adding subplot (WORTHY_MIN_BID={config.WORTHY_MIN_BID}, WORTHY_MIN_ROI={config.WORTHY_MIN_ROI})\n \"{snapshot.title}\"\n"))
 
 
 def deep_dive_puts(tickers, figman):

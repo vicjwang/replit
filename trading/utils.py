@@ -84,8 +84,8 @@ def calc_target_price(current_price, mu, sigma, n, xscore):
   # xscore := either tscore or zscore
   # Mean is linear with n.
   # Sigma is linear with sqrt(n).
-  expected_price = current_price * (1 + n*mu + xscore*math.sqrt(n)*sigma)
-  return expected_price
+  target_price = current_price * math.exp(n*mu + xscore*math.sqrt(n)*sigma)
+  return target_price
 
 
 def read_earnings_dates_from_csv(symbol):

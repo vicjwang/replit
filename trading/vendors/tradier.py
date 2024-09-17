@@ -8,7 +8,7 @@ import config
 
 from backoff import on_exception, expo
 from ratelimit import limits, sleep_and_retry
-from urllib3.exceptions import MaxRetryError
+from urllib3.exceptions import MaxRetryError, NewConnectionError
 
 from datetime import datetime
 from pandas.core.common import not_none
@@ -20,6 +20,7 @@ from decorators import cached
 TRADIER_API_KEY = os.environ['TRADIER_API_KEY']
 
 
+@on_exception(expo, NewConnectionError, max_tries=4)
 @on_exception(expo, MaxRetryError, max_tries=4)
 @sleep_and_retry
 @limits(calls=config.TRADIER_THROTTLE_RATE, period=config.TRADIER_THROTTLE_PERIOD)

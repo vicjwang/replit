@@ -42,8 +42,8 @@ class PriceModel:
     # Some helper columns.
     self.prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
     self.prices_df[self._COLNAME_DATE] = pd.to_datetime(self.prices_df[self._COLNAME_DATE])
-    self.prices_df[self._COLNAME_DAILY_CHANGE] = self.prices_df[self._COLNAME_CLOSE].pct_change(periods=1)
     self.prices_df[self._COLNAME_PREV_DAY] = pd.to_datetime(self.prices_df[self._COLNAME_DATE].shift(1))
+    self.prices_df[self._COLNAME_DAILY_CHANGE] = self.calc_marginal_change(self.prices_df)
     self.prices_df[self._COLNAME_IS_EARNINGS] = self.prices_df[self._COLNAME_DATE].isin(self.past_earnings_dates) | self.prices_df[self._COLNAME_PREV_DAY].isin(self.past_earnings_dates)
  
     # Use mask to include/exclude price movements on earnings dates.
@@ -93,10 +93,13 @@ class PriceModel:
     ])
     return s
 
+  def calc_marginal_change(self, df, colname='close', periods=1):
+    return np.log(df[colname]/df[colname].shift(periods))
+
   def graph_historical_returns(self, periods):
     graph_df = self.prices_df[self.avoid_earnings_mask]
     
-    graph_df['returns'] = graph_df[self._COLNAME_CLOSE].pct_change(periods=periods)
+    graph_df['returns'] = self.calc_marginal_change(graph_df, periods=periods)
 
     x_min = graph_df['returns'].min()
     x_max = graph_df['returns'].max()
@@ -122,7 +125,7 @@ class PriceModel:
 
       mask = graph_df['date'].between(prev_earnings_date, this_earnings_date)
       quarter_df = graph_df[mask]
-      period_returns = quarter_df['close'].pct_change(periods).dropna()
+      period_returns = self.calc_marginal_change(quarter_df, periods=periods).dropna()
       returns = np.concatenate([returns, period_returns])
 
     print(f"Period={periods}: mean={returns.mean()} sigma={returns.std()}")

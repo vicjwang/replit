@@ -29,7 +29,7 @@ def sell_intraquarter_derivatives(symbol, win_proba=None):
   latest_change = price_model.get_latest_change()
 
   sigma = price_model.get_daily_stdev()
-  min_change = sigma * config.MIN_ZSCORE
+  min_change = sigma * config.MIN_ZSCORE_THRESHOLD
 
   if (option_type == 'call' and latest_change < min_change) or (option_type == 'put' and latest_change > -1*min_change):
     raise ValueError(f'{symbol} {option_type} move threshold not met. ${latest_price}, {round(latest_change * 100, 2)}%')

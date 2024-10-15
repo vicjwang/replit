@@ -72,11 +72,6 @@ STOCKS = [
 ]
 
 COVERED_CALLS = dict(
-  DIS=1,  # cc
-  OKTA=1,  # cc
-  SNAP=1,  # cc
-  TWLO=1,  # cc
-  CRWD=1,
 )
 
 WATCHLIST = dict(
@@ -84,7 +79,9 @@ WATCHLIST = dict(
   ABNB=1,
   AMZN=1,
   CRM=1,
+  CRWD=1,
   DDOG=1,  # cc
+  DIS=1,  # cc
   GOOG=1,
   GME=1,
   META=1,
@@ -92,10 +89,13 @@ WATCHLIST = dict(
   MSFT=1,
   MSTR=1,
   NVDA=1,
+  OKTA=1,  # cc
+  SNAP=1,  # cc
   SHOP=1,
   SQ=1,
   TSLA=1,
   TSM=1,
+  TWLO=1,  # cc
   TXN=1,
   V=1,
 )

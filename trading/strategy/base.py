@@ -95,7 +95,7 @@ class DerivativeStrategyBase:
   def get_price_model(self):
     return self.price_model
 
-  def build_snapshot(self, option_type, sig_level, expiry_after=None, expiry_before=None):
+  def make_snapshot(self, option_type, sig_level, expiry_after=None, expiry_before=None):
 
     if option_type not in ('call', 'put'):
       raise ValueError("Invalid option_type: {option_type}")
@@ -176,7 +176,7 @@ class DerivativeStrategySnapshot:
     # Graph of ROI vs Expirations.
     xs = pd.to_datetime(expirations)
     ys = rois
-    ax.plot(xs, ys, linestyle='-', marker='o')
+#    ax.plot(xs, ys, linestyle='-', marker='o')
     scatter = ax.scatter(xs, ys)
     for x, y, strike, bid, delta in zip(xs, ys, strikes, bids, deltas):
       label = f'K=${strike}; ${bid} ({DELTA_UPPER}={delta:.2f})'
@@ -232,7 +232,7 @@ class DerivativeStrategySnapshot:
 
       sel.annotation.set(text=text)
     
-    yticks = [i/10 for i in range(2, 10)]
+    yticks = [i/10 for i in range(0, 11)]
     ax.set_yticks(yticks)
 
     ax.set_title(self.title)

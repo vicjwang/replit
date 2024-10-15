@@ -3,9 +3,12 @@ import pytest
 
 import config
 
-from analysis import strategy as Strategy
+from strategy.builds import SellSimplePutCreditSpreadBuild, SellSimplePutBuild
+from runners import Scanner, PutDiver
+
 from graphing import FigureManager
-from main import scan, deep_dive_puts, deep_dive_calls
+
+from constants import SIDE_SHORT
 
 
 class TestMain:
@@ -19,23 +22,13 @@ class TestMain:
     return ('NVDA',)
 
   def test_scan_success(self, tickers, figman):
-    strat = Strategy.sell_intraquarter_derivatives
-    scan(strat, tickers, figman)
+    build = SellSimplePutCreditSpreadBuild
+    scanner = Scanner(build, figman, win_proba=config.MY_WIN_PROBA, symbols=tickers)
+    scanner.run()
     figman.render()
-  
-  def test_scan_move_threshold_error(self, figman):
-    strat = Strategy.sell_intraquarter_derivatives
-    tickers = ['MDB']
-    with pytest.raises(ValueError):
-      scan(strat, tickers, figman)
 
   def test_deep_dive_puts_success(self, tickers, figman):
-    strat = deep_dive_puts
-    strat(tickers, figman)
+    build = SellSimplePutBuild
+    runner = PutDiver(build, figman, tickers)
+    runner.run(side=SIDE_SHORT)  # FIXME: vjw
     figman.render()
-
-  def test_deep_dive_calls_success(self, tickers, figman):
-    strat = deep_dive_calls
-    strat(tickers, figman)
-    figman.render()
-

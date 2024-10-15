@@ -21,6 +21,7 @@ from utils import (
   get_win_proba,
   get_target_colname,
   get_tscore,
+  get_sig_level,
 )
 from vendors.tradier import (
   fetch_options_expirations,
@@ -75,9 +76,14 @@ class DerivativeStrategyBase:
       for sig_level in sorted(T_SIG_LEVELS):
         # T-score does not exist for dof = 0 so default to Normal since sigma is 1 day move anyways.
         xscore = get_tscore(sig_level, dof) or PHI_ZSCORE[sig_level]
-        target_strike = self.price_model.predict_price(trading_dte, xscore)
-        colname = get_target_colname(sig_level)
-        chain_df[colname] = target_strike
+        print('vjw siglevel, xcore', sig_level, xscore)
+        short_strike = self.price_model.predict_price(trading_dte, xscore)
+        short_colname = get_target_colname(sig_level, 'short_target')
+        chain_df[short_colname] = short_strike
+
+        long_strike = chain_df['strike'] - (chain_df['bid'] * sig_level / (1 - sig_level))
+        long_colname = get_target_colname(sig_level, 'long_target')
+        chain_df[long_colname] = long_strike
 
       chain_dfs.append(chain_df)
       
@@ -101,8 +107,10 @@ class DerivativeStrategyBase:
       raise ValueError("Invalid option_type: {option_type}")
 
     # Capture closest 2 strikes.
-    target_colname = get_target_colname(sig_level)
-    graph_df = self.df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])
+    short_colname = get_target_colname(sig_level, 'short_target')
+    long_colname = get_target_colname(sig_level, 'long_target')
+    graph_df = self.df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[short_colname])).argsort()[:2]])
+    print('vjw graphdf', graph_df.head()[['description', 'strike', 'bid', short_colname, long_colname]])
 
     strike_mask = (graph_df['strike'] < config.MAX_STRIKE)
 

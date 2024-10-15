@@ -36,7 +36,7 @@ def get_stocks(tickers=None):
   return ret
 
 
-def scan(snapshot_fn, tickers, figman, win_proba=None):
+def scan(snapshot_fn, tickers, figman, win_proba=config.MY_WIN_PROBA):
   # Scan across many stocks.
   # One figure will show same strategy across multiple stocks.
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
   cmd = args.command
   tickers = args.tickers.upper().split(',') if args.tickers else None
   strategy_input = args.strategy
-  win_proba = float(args.proba) if args.proba else None
+  win_proba = float(args.proba) if args.proba else config.MY_WIN_PROBA
 
   figman = FigureManager()
 

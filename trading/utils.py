@@ -44,8 +44,8 @@ def get_tscore(a, dof):
   return stats.t.ppf(a, dof)
 
 
-def get_target_colname(sig_level):
-  return f"{round(sig_level, 3)}_target"
+def get_target_colname(sig_level, suffix=''):
+  return f"{round(sig_level, 3)}_{suffix}"
 
 
 def is_market_hours():

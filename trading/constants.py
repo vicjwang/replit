@@ -5,8 +5,7 @@ from collections import namedtuple
 from config import IS_WIDESCREEN, IS_PHONE
 
 
-T_SIG_LEVELS = [0.15, 0.5, 0.85, 0.90, 0.95, 0.975, 0.99]
-#T_SIG_LEVELS = [0.01, .025, 0.05, 0.10, 0.15, 0.5, 0.85, 0.90, 0.95, 0.975, 0.99]
+T_SIG_LEVELS = [0.01, .025, 0.05, 0.10, 0.15, 0.5, 0.85, 0.90, 0.95, 0.975, 0.99]
 
 PHI_ZSCORE = {
   # Includes entire left tail aka values directly taken from Standard Normal Table.

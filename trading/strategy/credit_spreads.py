@@ -1,121 +1,73 @@
-import mplcursors
-import matplotlib.dates as mdates
 import pandas as pd
 
 import config
 
-from datetime import datetime
+from analysis.derivative_strategy import DerivativeStrategyBase, DerivativeStrategySnapshot
 
-from analysis.models import PriceModel
+from vendors.tradier import (
+  fetch_options_chain,
+)
+
 from constants import (
   DATE_FORMAT,
-  DELTA_UPPER,
+  T_SIG_LEVELS,
   MU,
   SIGMA_LOWER,
-  PHI_ZSCORE,
-  T_SIG_LEVELS,
 )
+
 from utils import (
-  count_trading_days,
   calc_annual_roi,
+  count_trading_days,
+  get_sig_level,
   get_win_proba,
   get_target_colname,
   get_tscore,
 )
-from vendors.tradier import (
-  fetch_options_expirations,
-  fetch_options_chain,
-)
 
 
-class DerivativeStrategyBase:
-  INCLUDE_COLUMNS = [
-    'description',
-    'expiration_date',
-    'option_type',
-    'strike',
-    'bid',
-    'ask',
-    'volume',
-    'greeks',
-  ]
+class CreditSpreadStrategy(DerivativeStrategyBase):
+
+  def _calc_spread(self, win_proba, premium):
+    # Assume 0 EV.
+    return premium * win_proba / (1 - win_proba)
   
-  def __init__(self, symbol, side=None):
-    self.symbol = symbol
-    self.price_model = PriceModel(symbol)
-    self.side = side
-  
-    self.expiry_dates = pd.to_datetime(fetch_options_expirations(symbol))
-    self._load()
-
-  def __repr__(self):
-    return f"DerivativeStrategyBase(symbol={self.symbol}, side={self.side})"
-
-  def __str__(self):
-    return str(self.price_model)
-
-  def _load(self, use_cache=True):
-  
-    self.df = None
-    
-    chain_dfs = []
-    # Target strikes depend on expiry dates so concat by expiry date groups.
-    for expiry_date in self.expiry_dates:
-
-      chain = fetch_options_chain(self.symbol, expiry_date.strftime(DATE_FORMAT))
-      # Drop column if all values = nan.
-      chain_df = pd.DataFrame.from_records(chain, columns=self.INCLUDE_COLUMNS).dropna(axis=1, how='all')
-#      chain_df = pd.DataFrame.from_records(chain).dropna(axis=1, how='all')
-
-      if chain_df.empty:
-        continue
-
-      trading_dte = count_trading_days(expiry_date)
-      dof = trading_dte - 1
-      for sig_level in sorted(T_SIG_LEVELS):
-        # T-score does not exist for dof = 0 so default to Normal since sigma is 1 day move anyways.
-        xscore = get_tscore(sig_level, dof) or PHI_ZSCORE[sig_level]
-        target_strike = self.price_model.predict_price(trading_dte, xscore)
-        colname = get_target_colname(sig_level, 'sig_level_price')
-        chain_df[colname] = target_strike
-
-      chain_dfs.append(chain_df)
-      
-    # Optimization - concat just once at end, otherwise copy created per loop.
-    self.df = pd.concat(chain_dfs, axis=0)
-
-    # Helper columns including unnested greek columns.
-    greeks = pd.json_normalize(self.df['greeks']).set_index(self.df.index)
-    self.df = pd.concat([self.df.drop(columns=['greeks']), greeks], axis=1)
-
-    self.df['yoy_roi'] = self.df.apply(calc_annual_roi, axis=1)
-    self.df['expiration_date'] = pd.to_datetime(self.df['expiration_date'])
-
-  # TODO (vjw): use @property?
-  def get_price_model(self):
-    return self.price_model
-
   def build_snapshot(self, option_type, sig_level, expiry_after=None, expiry_before=None):
 
     if option_type not in ('call', 'put'):
       raise ValueError("Invalid option_type: {option_type}")
 
+    option_type_mask = (self.df['option_type'] == option_type)
+
     # Capture closest 2 strikes.
-    target_colname = get_target_colname(sig_level)
-    graph_df = self.df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])
+    target_colname = get_target_colname(sig_level, 'sig_level_price')
+    grouped_df = self.df[option_type_mask].groupby(by='expiration_date')
+
+    short_leg_df = grouped_df.apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:1]])
+    print('vjw short df\n', short_leg_df.head(10))
+    print('vjw short index len', len(short_leg_df.index))
+
+
+    win_proba = get_win_proba('short', option_type, sig_level)
+    long_leg_df = grouped_df.apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname] - self._calc_spread(win_proba, x['bid']))).argsort()[:1]])
+    print('vjw long df\n', long_leg_df.head(10))
+    print('vjw long index len', len(long_leg_df.index))
+
+    graph_df = pd.concat([short_leg_df.reset_index(drop=True), long_leg_df.reset_index(drop=True)])
+
 
     strike_mask = (graph_df['strike'] < config.MAX_STRIKE)
 
-    option_type_mask = (graph_df['option_type'] == option_type)
 
     # ROI needs to be worth it plus ROI becomes linear when too itm so remove.
-    roi_mask = (graph_df['yoy_roi'] > config.WORTHY_MIN_ROI)
+#    roi_mask = (graph_df['yoy_roi'] > config.WORTHY_MIN_ROI)
     otm_only_mask = (graph_df['yoy_roi'] < 1)
 
     # Cash needs to be worth it per contract.
     cash_mask = (graph_df['bid'] > config.WORTHY_MIN_BID)
 
-    mask = option_type_mask & strike_mask & cash_mask & roi_mask & otm_only_mask
+#    mask = option_type_mask & strike_mask & cash_mask & roi_mask & otm_only_mask
+
+    mask = strike_mask & otm_only_mask
 
     if expiry_after:
       start_mask = (graph_df['expiration_date'] > expiry_after)
@@ -144,24 +96,15 @@ class DerivativeStrategyBase:
       f'{MU}={mu * 100:.2f}%',
       f'{SIGMA_LOWER}={sigma * 100:.2f}%',
     ))
+    print('vjw graphdf\n', graph_df.sort_values(by=['expiration_date', 'strike']).head(10))
     return DerivativeStrategySnapshot(self.symbol, graph_df, self.side, option_type,
                                       sig_level, title=title, text=text, next_earnings=next_earnings)
 
 
-class DerivativeStrategySnapshot:
+class CreditSpreadSnapshot(DerivativeStrategySnapshot):
   
-  def __init__(self, symbol, df, side, option_type, sig_level, title=None, text=None, next_earnings=None):
-    self.symbol = symbol
-    self.df = df
-    self.title = title
-    self.text = text
-    self.side = side
-    self.option_type = option_type
-    self.sig_level = sig_level
-    self.next_earnings = next_earnings
-
   def graph_roi_vs_expiry(self, ax):
-    target_colname = get_target_colname(self.sig_level, 'sig_level_price')
+    target_colname = get_target_colname(self.sig_level)
 
     rois = self.df['yoy_roi']
     expirations = self.df['expiration_date']
@@ -176,7 +119,7 @@ class DerivativeStrategySnapshot:
     # Graph of ROI vs Expirations.
     xs = pd.to_datetime(expirations)
     ys = rois
-#    ax.plot(xs, ys, linestyle='-', marker='o')
+    ax.plot(xs, ys, linestyle='-', marker='o')
     scatter = ax.scatter(xs, ys)
     for x, y, strike, bid, delta in zip(xs, ys, strikes, bids, deltas):
       label = f'K=${strike}; ${bid} ({DELTA_UPPER}={delta:.2f})'
@@ -232,7 +175,7 @@ class DerivativeStrategySnapshot:
 
       sel.annotation.set(text=text)
     
-    yticks = [i/10 for i in range(0, 11)]
+    yticks = [i/10 for i in range(2, 10)]
     ax.set_yticks(yticks)
 
     ax.set_title(self.title)

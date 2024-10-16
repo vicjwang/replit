@@ -14,6 +14,11 @@ def strformat(symbol, s):
     return text
 
 
+def calc_spread(win_proba, premium):
+  # Assume 0 EV.
+  return premium * win_proba / (1 - win_proba)
+
+
 def get_sig_level(side, option_type, win_proba):
   if side == 'long' and option_type == 'call':
     return 1 - win_proba

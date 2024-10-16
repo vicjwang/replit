@@ -100,7 +100,6 @@ class CreditSpreadSnapshot(DerivativeStrategySnapshot):
     bids = self.df['bid']
     deltas = self.df['delta']
     target_strikes = self.df[target_colname].round(2)
-    long_target_strikes = calc_spread(win_proba, bids).round(2)
 
     if len(expirations) == 0:
       raise RuntimeError('No data to graph')
@@ -133,7 +132,6 @@ class CreditSpreadSnapshot(DerivativeStrategySnapshot):
       expiry_at = expiry.strftime(DATE_FORMAT)
       dte = dtes.iloc[i]
       target_strike = target_strikes.iloc[i]
-      long_target_strike = long_target_strikes.iloc[i]
       strike = strikes.iloc[i]
       bid = bids.iloc[i]
       volume = volumes.iloc[i]
@@ -143,19 +141,18 @@ class CreditSpreadSnapshot(DerivativeStrategySnapshot):
       gamma = gammas.iloc[i].round(4)
       vega = vegas.iloc[i].round(4)
       key = (expiry_at, roi)
-      tooltip_map[key] = (dte, target_strike, long_target_strike, strike, bid, volume, vol, delta, theta, gamma, vega)
+      tooltip_map[key] = (dte, target_strike, strike, bid, volume, vol, delta, theta, gamma, vega)
 
     @cursor.connect('add')
     def on_add(sel):
       expiry_at = mdates.num2date(sel.target[0]).strftime(DATE_FORMAT)
       roi = sel.target[1]
       key = (expiry_at, roi)
-      dte, target_strike, long_target_strike, strike, bid, volume, vol, delta, theta, gamma, vega = tooltip_map[key]
+      dte, target_strike, strike, bid, volume, vol, delta, theta, gamma, vega = tooltip_map[key]
       text = '\n'.join([
         f"expiry={expiry_at}",
         f"dte={dte}",
         f"target=${target_strike}",
-        f"long_target=${long_target_strike}",
         f"strike=${strike}",
         f"bid=${bid}",
         f"volume={volume}",
@@ -168,7 +165,7 @@ class CreditSpreadSnapshot(DerivativeStrategySnapshot):
 
       sel.annotation.set(text=text)
     
-    yticks = [i/10 for i in range(2, 10)]
+    yticks = [i/10 for i in range(11)]
     ax.set_yticks(yticks)
 
     ax.set_title(self.title)

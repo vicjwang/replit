@@ -6,7 +6,7 @@ import config
 
 from analysis.models import PriceModel
 from constants import COVERED_CALLS, SIDE_SHORT
-from analysis.derivative_strategy import DerivativeStrategyBase
+from strategy.credit_spreads import CreditSpreadStrategy
 from utils import get_sig_level
 
 
@@ -18,7 +18,7 @@ def sell_intraquarter_derivatives(symbol, win_proba=config.MY_WIN_PROBA):
 
   side = SIDE_SHORT
 
-  deriv_strat = DerivativeStrategyBase(symbol, side=side)
+  deriv_strat = CreditSpreadStrategy(symbol, side=side)
   print(deriv_strat)
   price_model = deriv_strat.get_price_model()
 
@@ -42,7 +42,7 @@ def sell_LTDITM_puts(symbol, win_proba=config.MY_WIN_PROBA):
   side = SIDE_SHORT
   option_type = 'put'
 
-  deriv_strat = DerivativeStrategyBase(symbol, side=side)
+  deriv_strat = CreditSpreadStrategy(symbol, side=side)
   print(deriv_strat)
   return deriv_strat.build_snapshot(option_type, 0.15, expiry_after=config.MIN_EXPIRY_DATESTR)
 
@@ -52,6 +52,6 @@ def sell_LTDOTM_calls(symbol, win_proba=config.MY_WIN_PROBA):
   side = SIDE_SHORT
   option_type = 'call'
 
-  deriv_strat = DerivativeStrategyBase(symbol, side=side)
+  deriv_strat = CreditSpreadStrategy(symbol, side=side)
   print(deriv_strat)
   return deriv_strat.build_snapshot(option_type, 0.85, expiry_after=config.MIN_EXPIRY_DATESTR)

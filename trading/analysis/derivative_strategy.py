@@ -13,7 +13,7 @@ from constants import (
   MU,
   SIGMA_LOWER,
   PHI_ZSCORE,
-  T_SIG_LEVELS,
+  WIN_PROBA_THRESHOLDS,
 )
 from utils import (
   count_trading_days,
@@ -73,7 +73,7 @@ class DerivativeStrategyBase:
 
       trading_dte = count_trading_days(expiry_date)
       dof = trading_dte - 1
-      for sig_level in sorted(T_SIG_LEVELS):
+      for sig_level in sorted(WIN_PROBA_THRESHOLDS):
         # T-score does not exist for dof = 0 so default to Normal since sigma is 1 day move anyways.
         xscore = get_tscore(sig_level, dof) or PHI_ZSCORE[sig_level]
         print('vjw siglevel, xcore', sig_level, xscore)
@@ -84,6 +84,7 @@ class DerivativeStrategyBase:
         long_strike = chain_df['strike'] - (chain_df['bid'] * sig_level / (1 - sig_level))
         long_colname = get_target_colname(sig_level, 'long_target')
         chain_df[long_colname] = long_strike
+        print('vjw row\n', chain_df[['description', long_colname, short_colname]])
 
       chain_dfs.append(chain_df)
       
@@ -169,7 +170,7 @@ class DerivativeStrategySnapshot:
     self.next_earnings = next_earnings
 
   def graph_roi_vs_expiry(self, ax):
-    target_colname = get_target_colname(self.sig_level)
+    target_colname = get_target_colname(self.sig_level, 'short_target')
 
     rois = self.df['yoy_roi']
     expirations = self.df['expiration_date']
@@ -177,6 +178,12 @@ class DerivativeStrategySnapshot:
     bids = self.df['bid']
     deltas = self.df['delta']
     target_strikes = self.df[target_colname].round(2)
+
+    long_colname = get_target_colname(self.sig_level, 'long_target')
+    long_strikes = self.df[long_colname].round(2)
+    print('vjw self.df\n', self.df[['description', long_colname, target_colname]])
+    print('vjw short', target_strikes)
+    print('vjw long', long_strikes)
 
     if len(expirations) == 0:
       raise RuntimeError('No data to graph')

@@ -135,28 +135,13 @@ if __name__ == '__main__':
   figman = FigureManager()
 
   # Scan across stocks with strategies.
-  if cmd == 'scan' and False:
-    scan_strats = [
-      Strategy.sell_intraquarter_derivatives,
-      Strategy.sell_LTDITM_puts,
-    ]
-
-    if strategy_input is None:
-      for strat in scan_strats:
-        scan(strat, tickers, figman)
-    elif strategy_input.isdigit():
-      strat = scan_strats[int(strategy_input)]
-      scan(strat, tickers, figman, win_proba=win_proba)
-    else:
-      print(f"Invalid strategy:", ' '.join([f"{i}={strat.__name__}" for i, strat in enumerate(scan_strats)]))
-      sys.exit(1)
-
-  elif cmd == 'scan':
+  if cmd == 'scan':
     build = SellSimplePutCreditSpreadBuild
-    scanner = Scanner(build, figman, symbols=tickers)
+    scanner = Scanner(build, figman, win_proba=win_proba, symbols=tickers)
     scanner.run()
 
   elif cmd == 'dd':
+    # FIXME
     strats = [
       deep_dive_calls,
       deep_dive_puts,

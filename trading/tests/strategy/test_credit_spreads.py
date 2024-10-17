@@ -15,10 +15,10 @@ SNAPSHOT_CSV_TEMPLATE = 'tests/fixtures/MDB-credit-spreads-snapshot-{YYYYmmdd}.c
 class TestCreditSpreadStrategy:
   
   @patch('config.NOW', datetime(2024, 10, 16))
-  def test_build_snapshot(self):
+  def test_make_snapshot(self):
     symbol = 'MDB'
     strat = CreditSpreadStrategy(symbol, side='short')
-    snapshot = strat.build_snapshot('put', 0.15)
+    snapshot = strat.make_snapshot('put', 0.15)
 
     result = snapshot.df
     snapshot_csv = SNAPSHOT_CSV_TEMPLATE.format(YYYYmmdd=config.NOW.strftime('%Y%m%d'))
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
   symbol = 'MDB'
   strat = CreditSpreadStrategy(symbol, side='short')
-  snapshot = strat.build_snapshot('put', 0.15)
+  snapshot = strat.make_snapshot('put', 0.15)
   snapshot_csv = SNAPSHOT_CSV_TEMPLATE.format(YYYYmmdd=config.NOW.strftime('%Y%m%d'))
 
   assert len(snapshot.df) > 0

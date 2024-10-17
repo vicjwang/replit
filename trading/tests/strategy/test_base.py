@@ -15,10 +15,10 @@ SNAPSHOT_CSV_TEMPLATE = 'tests/fixtures/{symbol}-snapshot-{YYYYmmdd}.csv'
 class TestDerivativeStrategyBase:
   
   @patch('config.WORTHY_MIN_ROI', 0.2)
-  def test_build_snapshot(self):
+  def test_make_snapshot(self):
     symbol = 'MDB'
     strat = DerivativeStrategyBase(symbol, side='short')
-    snapshot = strat.build_snapshot('put', 0.15)
+    snapshot = strat.make_snapshot('put', 0.15)
 
     result = snapshot.df
     snapshot_csv = SNAPSHOT_CSV_TEMPLATE.format(symbol=symbol, YYYYmmdd=config.NOW.strftime('%Y%m%d'))
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
   for symbol in symbols:
     strat = DerivativeStrategyBase(symbol, side='short')
-    snapshot = strat.build_snapshot('put', 0.15)
+    snapshot = strat.make_snapshot('put', 0.15)
     snapshot_csv = SNAPSHOT_CSV_TEMPLATE.format(symbol=symbol, YYYYmmdd=config.NOW.strftime('%Y%m%d'))
 
     assert len(snapshot.df) > 0

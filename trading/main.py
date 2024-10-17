@@ -20,9 +20,7 @@ from graphing import FigureManager
 
 from utils import strformat
 
-
 from runners import Scanner
-
 
 
 def get_stocks(tickers=None):

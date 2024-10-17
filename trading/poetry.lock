@@ -409,6 +409,20 @@ unicode = ["unicodedata2 (>=15.0.0)"]
 woff = ["brotli (>=1.0.1)", "brotlicffi (>=0.8.0)", "zopfli (>=0.1.4)"]
 
 [[package]]
+name = "freezegun"
+version = "1.5.1"
+description = "Let your Python tests travel through time"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "freezegun-1.5.1-py3-none-any.whl", hash = "sha256:bf111d7138a8abe55ab48a71755673dbaa4ab87f4cff5634a4442dfec34c15f1"},
+    {file = "freezegun-1.5.1.tar.gz", hash = "sha256:b29dedfcda6d5e8e083ce71b2b542753ad48cfec44037b3fc79702e2980a89e9"},
+]
+
+[package.dependencies]
+python-dateutil = ">=2.7"
+
+[[package]]
 name = "frozendict"
 version = "2.3.8"
 description = "A simple immutable dictionary"
@@ -2186,4 +2200,4 @@ requests = ">=2.31"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.11"
-content-hash = "f7f8aa7d46f4acac02e832a6b9fc769c57f3fc927034737e4f70ad4e05f48543"
+content-hash = "53fca79f3a6e1102a9da5d349faa49ec6d5cd9f2455bb3781185e95fa36a6269"

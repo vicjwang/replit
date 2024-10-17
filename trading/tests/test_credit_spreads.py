@@ -1,4 +1,5 @@
 import pandas as pd
+from unittest.mock import patch
 
 import config
 
@@ -8,20 +9,20 @@ from constants import DATE_FORMAT
 from strategy.credit_spreads import CreditSpreadStrategy
 
 
-SNAPSHOT_CSV = 'tests/fixtures/MDB-credit-spreads-snapshot-{}.csv'.format(config.NOW.strftime('%Y%m%d'))
+SNAPSHOT_CSV_TEMPLATE = 'tests/fixtures/MDB-credit-spreads-snapshot-{YYYYmmdd}.csv'
 
 
 class TestCreditSpreadStrategy:
   
+  @patch('config.NOW', datetime(2024, 10, 16))
   def test_build_snapshot(self):
     symbol = 'MDB'
     strat = CreditSpreadStrategy(symbol, side='short')
     snapshot = strat.build_snapshot('put', 0.15)
 
     result = snapshot.df
-    expected = pd.read_csv(SNAPSHOT_CSV, parse_dates=['expiration_date'])
-    print('vjw result\n', result[['description', 'bid', '0.15_target', 'yoy_roi']])
-    print('vjw expected\n', expected[['description', 'bid', '0.15_target', 'yoy_roi']])
+    snapshot_csv = SNAPSHOT_CSV_TEMPLATE.format(YYYYmmdd=config.NOW.strftime('%Y%m%d'))
+    expected = pd.read_csv(snapshot_csv, parse_dates=['expiration_date'])
 
     pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
 
@@ -33,7 +34,8 @@ if __name__ == '__main__':
   symbol = 'MDB'
   strat = CreditSpreadStrategy(symbol, side='short')
   snapshot = strat.build_snapshot('put', 0.15)
+  snapshot_csv = SNAPSHOT_CSV_TEMPLATE.format(YYYYmmdd=config.NOW.strftime('%Y%m%d'))
 
   assert len(snapshot.df) > 0
 
-  snapshot.df.reset_index(drop=True).to_csv(SNAPSHOT_CSV, index=False, date_format=DATE_FORMAT)
+  snapshot.df.reset_index(drop=True).to_csv(snapshot_csv, index=False, date_format=DATE_FORMAT)

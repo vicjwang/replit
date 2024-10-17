@@ -40,7 +40,7 @@ class CreditSpreadStrategy(DerivativeStrategyBase):
       raise NotImplementedError
 
     # Capture closest strike to short leg.
-    target_colname = get_target_colname(sig_level, 'sig_level_price')
+    target_colname = get_target_colname(sig_level)
     option_type_mask = (self.df['option_type'] == option_type)
     grouped_df = self.df[option_type_mask].groupby(by='expiration_date')
     short_leg_df = grouped_df.apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:1]])
@@ -91,7 +91,7 @@ class CreditSpreadStrategy(DerivativeStrategyBase):
 class CreditSpreadSnapshot(DerivativeStrategySnapshot):
   
   def graph_roi_vs_expiry(self, ax):
-    target_colname = get_target_colname(self.sig_level, 'sig_level_price')
+    target_colname = get_target_colname(self.sig_level)
     win_proba = get_win_proba('short', self.option_type, self.sig_level)
 
     rois = self.df['yoy_roi']

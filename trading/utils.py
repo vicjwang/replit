@@ -49,7 +49,7 @@ def get_tscore(a, dof):
   return stats.t.ppf(a, dof)
 
 
-def get_target_colname(sig_level, suffix=''):
+def get_target_colname(sig_level, suffix='target'):
   return f"{round(sig_level, 3)}_{suffix}"
 
 

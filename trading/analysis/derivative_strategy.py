@@ -76,7 +76,7 @@ class DerivativeStrategyBase:
         # T-score does not exist for dof = 0 so default to Normal since sigma is 1 day move anyways.
         xscore = get_tscore(sig_level, dof) or PHI_ZSCORE[sig_level]
         target_strike = self.price_model.predict_price(trading_dte, xscore)
-        colname = get_target_colname(sig_level, 'sig_level_price')
+        colname = get_target_colname(sig_level)
         chain_df[colname] = target_strike
 
       chain_dfs.append(chain_df)
@@ -101,7 +101,7 @@ class DerivativeStrategyBase:
       raise ValueError("Invalid option_type: {option_type}")
 
     # Capture closest 2 strikes.
-    target_colname = get_target_colname(sig_level, 'sig_level_price')
+    target_colname = get_target_colname(sig_level)
     graph_df = self.df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])
 
     strike_mask = (graph_df['strike'] < config.MAX_STRIKE)
@@ -161,7 +161,7 @@ class DerivativeStrategySnapshot:
     self.next_earnings = next_earnings
 
   def graph_roi_vs_expiry(self, ax):
-    target_colname = get_target_colname(self.sig_level, 'sig_level_price')
+    target_colname = get_target_colname(self.sig_level)
 
     rois = self.df['yoy_roi']
     expirations = self.df['expiration_date']

@@ -25,4 +25,4 @@ TRADIER_THROTTLE_RATE = 118  # per minute
 TRADIER_THROTTLE_PERIOD = 61  # in seconds
 
 NOW = datetime.utcnow()
-NUM_PARALLEL_JOPS = 1
+NUM_PARALLEL_JOBS = 1

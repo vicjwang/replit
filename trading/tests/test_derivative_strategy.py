@@ -1,4 +1,5 @@
 import pandas as pd
+from unittest.mock import patch
 
 import config
 
@@ -14,6 +15,7 @@ SNAPSHOT_CSV_TEMPLATE = 'tests/fixtures/{symbol}-snapshot-{YYYYmmdd}.csv'
 
 class TestDerivativeStrategyBase:
   
+  @patch('config.WORTHY_MIN_ROI', 0.2)
   def test_build_snapshot(self):
     symbol = 'MDB'
     strat = DerivativeStrategyBase(symbol, side='short')

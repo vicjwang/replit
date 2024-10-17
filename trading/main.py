@@ -56,7 +56,7 @@ def scan(snapshot_fn, tickers, figman, win_proba=config.MY_WIN_PROBA):
 
   stocks = get_stocks(tickers)
 
-  snapshots = Parallel(n_jobs=2)(delayed(process)(stock) for stock in stocks)
+  snapshots = Parallel(n_jobs=config.NUM_PARALLEL_JOBS)(delayed(process)(stock) for stock in stocks)
 
   for snapshot in snapshots:
     if snapshot:

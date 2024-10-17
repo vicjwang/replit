@@ -8,7 +8,6 @@ from constants import DATE_FORMAT
 from analysis.derivative_strategy import DerivativeStrategyBase
 
 
-SNAPSHOT_CSV = 'tests/fixtures/MDB-snapshot-{}.csv'.format(config.NOW.strftime('%Y%m%d'))
 
 
 class TestDerivativeStrategyBase:
@@ -30,10 +29,14 @@ if __name__ == '__main__':
   # Usage: 
   # $ ENV=test poetry run python -m tests.test_derivative_strategy
 
-  symbol = 'MDB'
-  strat = DerivativeStrategyBase(symbol, side='short')
-  snapshot = strat.build_snapshot('put', 0.15)
+#  symbol = 'MDB'
+  symbols = 'AAPL,TSM,SNAP'.split(',')
 
-  assert len(snapshot.df) > 0
+  for symbol in symbols:
+    strat = DerivativeStrategyBase(symbol, side='short')
+    snapshot = strat.build_snapshot('put', 0.15)
+    SNAPSHOT_CSV = 'tests/fixtures/{}-snapshot-{}.csv'.format(symbol, config.NOW.strftime('%Y%m%d'))
 
-  snapshot.df.reset_index(drop=True).to_csv(SNAPSHOT_CSV, index=False, date_format=DATE_FORMAT)
+    assert len(snapshot.df) > 0
+
+    snapshot.df.reset_index(drop=True).to_csv(SNAPSHOT_CSV, index=False, date_format=DATE_FORMAT)

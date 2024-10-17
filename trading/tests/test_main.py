@@ -3,11 +3,13 @@ import pytest
 
 import config
 
-from strategy.builds import SellSimplePutCreditSpreadBuild
-from runners import Scanner
+from strategy.builds import SellSimplePutCreditSpreadBuild, SellSimplePutBuild
+from runners import Scanner, PutDiver
 
 from graphing import FigureManager
 from main import scan, deep_dive_puts, deep_dive_calls
+
+from constants import SIDE_SHORT
 
 
 class TestMain:
@@ -26,6 +28,11 @@ class TestMain:
     scanner.run()
     figman.render()
 
+  def test_deep_dive_puts_success(self, tickers, figman):
+    build = SellSimplePutBuild
+    runner = PutDiver(build, figman, tickers)
+    runner.run(side=SIDE_SHORT)  # FIXME: vjw
+    figman.render()
 
   
   @pytest.mark.skip()
@@ -35,11 +42,6 @@ class TestMain:
     with pytest.raises(ValueError):
       scan(strat, tickers, figman)
 
-  @pytest.mark.skip()
-  def test_deep_dive_puts_success(self, tickers, figman):
-    strat = deep_dive_puts
-    strat(tickers, figman)
-    figman.render()
 
   @pytest.mark.skip()
   def test_deep_dive_calls_success(self, tickers, figman):

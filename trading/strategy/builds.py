@@ -6,13 +6,14 @@ import config
 
 from analysis.models import PriceModel
 from constants import COVERED_CALLS, SIDE_SHORT
+from strategy.base import DerivativeStrategyBase
 from strategy.credit_spreads import CreditSpreadStrategy
 from utils import get_sig_level
 
 
 class Build:
   
-  def __init__(self, symbol, win_proba=config.MY_WIN_PROBA):
+  def __init__(self, symbol, win_proba, *args, **kwargs):
     self.symbol = symbol
     self.win_proba = win_proba
   
@@ -24,12 +25,12 @@ class Build:
     return self.create_snapshot()
 
 
-class SellSimplePutCreditSpreadBuild(Build):
-
+class SellSimplePutBuild(Build):
+  
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.side = SIDE_SHORT
-    self.strategy = CreditSpreadStrategy(self.symbol, side=self.side)
+    self.strategy = DerivativeStrategyBase(self.symbol, side=self.side)
     self.price_model = self.strategy.get_price_model()
     self.option_type = 'put'
 
@@ -48,6 +49,14 @@ class SellSimplePutCreditSpreadBuild(Build):
     sig_level = get_sig_level(self.side, self.option_type, self.win_proba)
     next_earnings_date = self.price_model.get_next_earnings_date()
     return self.strategy.make_snapshot(self.option_type, sig_level, expiry_before=next_earnings_date)
+
+
+class SellSimplePutCreditSpreadBuild(SellSimplePutBuild):
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.strategy = CreditSpreadStrategy(self.symbol, side=self.side)
+    self.price_model = self.strategy.get_price_model()
 
 
 

@@ -4,7 +4,7 @@ import traceback
 
 import config
 
-from strategy.builds import SellSimplePutCreditSpreadBuild
+from strategy.builds import SellSimplePutCreditSpreadBuild, SellSimplePutBuild
 
 from collections import defaultdict
 from joblib import Parallel, delayed
@@ -20,7 +20,8 @@ from graphing import FigureManager
 
 from utils import strformat
 
-from runners import Scanner
+from runners import Scanner, PutDiver
+
 
 
 def get_stocks(tickers=None):
@@ -131,29 +132,18 @@ if __name__ == '__main__':
   win_proba = float(args.proba) if args.proba else config.MY_WIN_PROBA
 
   figman = FigureManager()
+  runner = None
 
   # Scan across stocks with strategies.
   if cmd == 'scan':
     build = SellSimplePutCreditSpreadBuild
-    scanner = Scanner(build, figman, win_proba=win_proba, symbols=tickers)
-    scanner.run()
+    runner = Scanner(build, figman, tickers, win_proba=win_proba)
+    runner.run()
 
   elif cmd == 'dd':
-    # FIXME
-    strats = [
-      deep_dive_calls,
-      deep_dive_puts,
-    ]
-
-    if strategy_input is None:
-      for strat in strats:
-        strat(tickers, figman)
-    elif strategy_input.isdigit():
-      strat = strats[int(strategy_input)]
-      strat(tickers, figman)
-    else:
-      print(f"Invalid strategy:", ' '.join([f"{i}={strat.__name__}" for i, strat in enumerate(strats)]))
-      sys.exit(1)
+    build = SellSimplePutBuild
+    runner = PutDiver(build, figman, tickers)
+    runner.run(side=SIDE_SHORT)
 
   else:
     print(f"Invalid command - either 'scan' or 'dd'")

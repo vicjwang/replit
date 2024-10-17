@@ -4,10 +4,12 @@ import traceback
 
 import config
 
+import strategy.runners as Runners
+
 from collections import defaultdict
 from joblib import Parallel, delayed
 
-from analysis import strategy as Strategy
+
 from constants import (
   COVERED_CALLS,
   WATCHLIST,
@@ -71,7 +73,7 @@ def deep_dive_puts(tickers, figman):
   stocks = get_stocks(tickers)
   for stock in stocks:
     symbol = stock.symbol
-    strat = Strategy.DerivativeStrategyBase(symbol, side=SIDE_SHORT)
+    strat = Runners.DerivativeStrategyBase(symbol, side=SIDE_SHORT)
     print(strat)
   
     sig_levels = [0.15, 0.10, 0.05, 0.01]
@@ -85,7 +87,7 @@ def deep_dive_calls(tickers, figman):
     if symbol not in COVERED_CALLS:
       continue
 
-    strat = Strategy.DerivativeStrategyBase(symbol, side=SIDE_SHORT)
+    strat = Runners.DerivativeStrategyBase(symbol, side=SIDE_SHORT)
     sig_levels = [0.5, 0.85, 0.90, 0.95, 0.975, 0.99]
     deep_dive(strat, 'call', sig_levels, figman)
 

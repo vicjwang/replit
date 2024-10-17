@@ -6,8 +6,7 @@ import config
 from datetime import datetime
 
 from constants import DATE_FORMAT
-from analysis.derivative_strategy import DerivativeStrategyBase
-
+from strategy.base import DerivativeStrategyBase
 
 
 SNAPSHOT_CSV_TEMPLATE = 'tests/fixtures/{symbol}-snapshot-{YYYYmmdd}.csv'

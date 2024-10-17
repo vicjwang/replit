@@ -3,7 +3,7 @@ import pytest
 
 import config
 
-from analysis import strategy as Strategy
+import strategy.runners as Runners
 from graphing import FigureManager
 from main import scan, deep_dive_puts, deep_dive_calls
 
@@ -19,12 +19,12 @@ class TestMain:
     return ('NVDA',)
 
   def test_scan_success(self, tickers, figman):
-    strat = Strategy.sell_intraquarter_derivatives
+    strat = Runners.sell_intraquarter_derivatives
     scan(strat, tickers, figman)
     figman.render()
   
   def test_scan_move_threshold_error(self, figman):
-    strat = Strategy.sell_intraquarter_derivatives
+    strat = Runners.sell_intraquarter_derivatives
     tickers = ['MDB']
     with pytest.raises(ValueError):
       scan(strat, tickers, figman)

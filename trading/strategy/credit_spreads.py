@@ -4,7 +4,7 @@ import pandas as pd
 
 import config
 
-from analysis.derivative_strategy import DerivativeStrategyBase, DerivativeStrategySnapshot
+from strategy.base import DerivativeStrategyBase, DerivativeStrategySnapshot
 
 from vendors.tradier import (
   fetch_options_chain,

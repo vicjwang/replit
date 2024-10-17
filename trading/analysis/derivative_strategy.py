@@ -101,7 +101,7 @@ class DerivativeStrategyBase:
       raise ValueError("Invalid option_type: {option_type}")
 
     # Capture closest 2 strikes.
-    target_colname = get_target_colname(sig_level)
+    target_colname = get_target_colname(sig_level, 'sig_level_price')
     graph_df = self.df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])
 
     strike_mask = (graph_df['strike'] < config.MAX_STRIKE)

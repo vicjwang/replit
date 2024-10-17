@@ -8,7 +8,7 @@ from constants import DATE_FORMAT
 from analysis.derivative_strategy import DerivativeStrategyBase
 
 
-SNAPSHOT_CSV = 'tests/fixtures/MDB-snapshot-20240725.csv'
+SNAPSHOT_CSV = 'tests/fixtures/MDB-snapshot-{}.csv'.format(config.NOW.strftime('%Y%m%d'))
 
 
 class TestDerivativeStrategyBase:
@@ -37,5 +37,3 @@ if __name__ == '__main__':
   assert len(snapshot.df) > 0
 
   snapshot.df.reset_index(drop=True).to_csv(SNAPSHOT_CSV, index=False, date_format=DATE_FORMAT)
-
-

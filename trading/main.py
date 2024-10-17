@@ -4,7 +4,7 @@ import traceback
 
 import config
 
-from strategy.builder import SellSimpleCreditSpreadBuild
+from strategy.builds import SellSimplePutCreditSpreadBuild
 
 from collections import defaultdict
 from joblib import Parallel, delayed
@@ -152,7 +152,7 @@ if __name__ == '__main__':
       sys.exit(1)
 
   elif cmd == 'scan':
-    build = SellSimpleCreditSpreadBuild
+    build = SellSimplePutCreditSpreadBuild
     scanner = Scanner(build, figman, symbols=tickers)
     scanner.run()
 

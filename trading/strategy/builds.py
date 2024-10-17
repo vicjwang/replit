@@ -20,10 +20,11 @@ class Build:
     pass
 
   def create_snapshot(self):
-    pass
+    self.validate_conditions()
+    return self.create_snapshot()
 
 
-class SellSimpleCreditSpreadBuild(Build):
+class SellSimplePutCreditSpreadBuild(Build):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -31,8 +32,6 @@ class SellSimpleCreditSpreadBuild(Build):
     self.strategy = CreditSpreadStrategy(self.symbol, side=self.side)
     self.price_model = self.strategy.get_price_model()
     self.option_type = 'put'
-
-    self.validate_conditions()
 
   def validate_conditions(self):
 
@@ -49,7 +48,7 @@ class SellSimpleCreditSpreadBuild(Build):
     sig_level = get_sig_level(self.side, self.option_type, self.win_proba)
     next_earnings_date = self.price_model.get_next_earnings_date()
     return self.strategy.make_snapshot(self.option_type, sig_level, expiry_before=next_earnings_date)
-  
+
 
 
 

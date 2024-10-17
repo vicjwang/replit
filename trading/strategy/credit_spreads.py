@@ -31,7 +31,7 @@ from utils import (
 
 class CreditSpreadStrategy(DerivativeStrategyBase):
   
-  def build_snapshot(self, option_type, sig_level, expiry_after=None, expiry_before=None):
+  def make_snapshot(self, option_type, sig_level, expiry_after=None, expiry_before=None):
 
     if option_type not in ('call', 'put'):
       raise ValueError("Invalid option_type: {option_type}")

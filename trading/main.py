@@ -4,7 +4,7 @@ import traceback
 
 import config
 
-import strategy.runners as Runners
+from strategy.builder import SellSimpleCreditSpreadBuild
 
 from collections import defaultdict
 from joblib import Parallel, delayed
@@ -19,6 +19,10 @@ from constants import (
 from graphing import FigureManager
 
 from utils import strformat
+
+
+from runners import Scanner
+
 
 
 def get_stocks(tickers=None):
@@ -131,7 +135,7 @@ if __name__ == '__main__':
   figman = FigureManager()
 
   # Scan across stocks with strategies.
-  if cmd == 'scan':
+  if cmd == 'scan' and False:
     scan_strats = [
       Strategy.sell_intraquarter_derivatives,
       Strategy.sell_LTDITM_puts,
@@ -146,6 +150,11 @@ if __name__ == '__main__':
     else:
       print(f"Invalid strategy:", ' '.join([f"{i}={strat.__name__}" for i, strat in enumerate(scan_strats)]))
       sys.exit(1)
+
+  elif cmd == 'scan':
+    build = SellSimpleCreditSpreadBuild
+    scanner = Scanner(build, figman, symbols=tickers)
+    scanner.run()
 
   elif cmd == 'dd':
     strats = [

@@ -6,10 +6,6 @@ import config
 
 from strategy.base import DerivativeStrategyBase, DerivativeStrategySnapshot
 
-from vendors.tradier import (
-  fetch_options_chain,
-)
-
 from constants import (
   DATE_FORMAT,
   T_SIG_LEVELS,

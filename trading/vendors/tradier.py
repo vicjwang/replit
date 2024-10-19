@@ -52,7 +52,7 @@ def fetch_options_expirations(symbol):
   return make_api_request(endpoint, params)['expirations']['date']
 
 
-@cached(force_refresh=is_market_hours(), use_time=is_market_hours())
+@cached(force_refresh=is_market_hours() or config.FORCE_REFRESH, use_time=is_market_hours())
 def fetch_options_chain(symbol, expiry_date, option_type=None, target_price=None, plus_minus=0):
   endpoint = 'https://api.tradier.com/v1/markets/options/chains'
   params = {'symbol': symbol, 'expiration': expiry_date, 'greeks': 'true'}

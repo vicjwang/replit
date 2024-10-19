@@ -54,7 +54,7 @@ class DerivativeStrategyBase:
   def __str__(self):
     return str(self.price_model)
 
-  def _load(self, use_cache=True):
+  def _load(self):
   
     self.df = None
     

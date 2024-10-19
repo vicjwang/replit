@@ -15,9 +15,7 @@ class Build:
   def __init__(self, symbol, win_proba, *args, **kwargs):
     self.symbol = symbol
     self.win_proba = win_proba
-
-  def _get_strategy(self):
-    raise NotImplementedError
+    self._strategy = None
 
   @property
   def strategy(self):
@@ -43,7 +41,9 @@ class SellSimplePutBuild(Build):
 
   @property
   def strategy(self):
-    return DerivativeStrategyBase(self.symbol, side=self.side)
+    if self._strategy is None:
+      self._strategy = DerivativeStrategyBase(self.symbol, side=self.side)
+    return self._strategy
 
   def validate_conditions(self):
     latest_price = self.price_model.get_latest_price()
@@ -65,7 +65,9 @@ class SellSimplePutCreditSpreadBuild(SellSimplePutBuild):
 
   @property
   def strategy(self):
-    return CreditSpreadStrategy(self.symbol, side=self.side)
+    if self._strategy is None:
+      self._strategy = CreditSpreadStrategy(self.symbol, side=self.side)
+    return self._strategy
 
 
 ########## DEPRECATED ##########

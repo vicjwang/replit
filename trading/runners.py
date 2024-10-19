@@ -39,7 +39,7 @@ class Scanner(Runner):
         raise e
 
   def run(self, side=None):
-    Parallel(n_jobs=config.NUM_PARALLEL_JOBS)(delayed(self._run_iter)(symbol) for symbol in self.symbols)
+    Parallel(n_jobs=config.NUM_PARALLEL_JOBS, require='sharedmem')(delayed(self._run_iter)(symbol) for symbol in self.symbols)
 
 
 class Diver(Runner):

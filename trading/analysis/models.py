@@ -167,6 +167,15 @@ class PriceModel:
     total = num_over + num_under
     return num_under / total if is_under else num_over / total
 
+  def get_ma(self, n=200):
+    return self.prices_df.iloc[-1*n:]['close'].mean().round(2)
+
+  def get_52_high(self):
+    return self.prices_df.iloc[-252:]['close'].max().round(2)
+
+  def get_52_low(self):
+    return self.prices_df.iloc[-252:]['close'].min().round(2)
+
 
 if __name__ == '__main__':
 

@@ -1967,6 +1967,20 @@ pure-eval = "*"
 tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
+name = "syrupy"
+version = "4.7.2"
+description = "Pytest Snapshot Test Utility"
+optional = false
+python-versions = ">=3.8.1"
+files = [
+    {file = "syrupy-4.7.2-py3-none-any.whl", hash = "sha256:eae7ba6be5aed190237caa93be288e97ca1eec5ca58760e4818972a10c4acc64"},
+    {file = "syrupy-4.7.2.tar.gz", hash = "sha256:ea45e099f242de1bb53018c238f408a5bb6c82007bc687aefcbeaa0e1c2e935a"},
+]
+
+[package.dependencies]
+pytest = ">=7.0.0,<9.0.0"
+
+[[package]]
 name = "tenacity"
 version = "8.4.2"
 description = "Retry code until it succeeds"
@@ -2200,4 +2214,4 @@ requests = ">=2.31"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.11"
-content-hash = "53fca79f3a6e1102a9da5d349faa49ec6d5cd9f2455bb3781185e95fa36a6269"
+content-hash = "1a933ce1ba49de0da6004bede73d82eea61d7ec95882a97e8ede5c8997e5d6e1"

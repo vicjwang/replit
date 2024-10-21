@@ -9,4 +9,7 @@ REGIME_START_DATE = '2023-01-01'
 SHOW_GRAPHS = False
 
 
-NOW = datetime(2024, 7, 25)
+# This cannot be patched at test runtime because @cached decorator is run once at definition time.
+NOW = datetime(2024, 10, 24)  # NOTE: UTC implicit but do not specify tzinfo on purpose.
+
+FORCE_REFRESH = False

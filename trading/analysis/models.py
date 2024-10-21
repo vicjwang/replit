@@ -21,7 +21,7 @@ from constants import (
   SIGMA_LOWER,
 )
 
-from utils import calc_target_price, strformat, get_tscore
+from utils import calc_target_price, strformat, get_tscore, is_market_hours
 
 
 class PriceModel:
@@ -66,7 +66,11 @@ class PriceModel:
     return fetch_latest_price(self.symbol)
 
   def get_latest_change(self):
-    last_close = self.prices_df.iloc[-1][self._COLNAME_CLOSE]
+    if is_market_hours():
+      index = -1
+    else:
+      index = -2
+    last_close = self.prices_df.iloc[index][self._COLNAME_CLOSE]
     return (self.get_latest_price() - last_close) / last_close
 
   def get_daily_mean(self):
@@ -166,6 +170,15 @@ class PriceModel:
 
     total = num_over + num_under
     return num_under / total if is_under else num_over / total
+
+  def get_ma(self, n=200):
+    return self.prices_df.iloc[-1*n:]['close'].mean().round(2)
+
+  def get_52_high(self):
+    return self.prices_df.iloc[-252:]['close'].max().round(2)
+
+  def get_52_low(self):
+    return self.prices_df.iloc[-252:]['close'].min().round(2)
 
 
 if __name__ == '__main__':

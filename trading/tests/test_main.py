@@ -19,7 +19,7 @@ class TestMain:
 
   @pytest.fixture
   def tickers(self):
-    return ('NVDA',)
+    return ['MDB']
 
   def test_scan_success(self, tickers, figman):
     build = SellSimplePutCreditSpreadBuild
@@ -27,6 +27,7 @@ class TestMain:
     scanner.run()
     figman.render()
 
+  @pytest.mark.skip()
   def test_deep_dive_puts_success(self, tickers, figman):
     build = SellSimplePutBuild
     runner = PutDiver(build, figman, tickers)

@@ -11,7 +11,7 @@ class TestModel:
 
   @pytest.fixture
   def model(self):
-    model = PriceModel('MDB')
+    model = PriceModel('TSLA')
     return model
 
   @patch('config.NOW', datetime(2024, 10, 16))

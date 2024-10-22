@@ -32,7 +32,7 @@ if __name__ == '__main__':
   # $ ENV=test poetry run python -m tests.test_derivative_strategy
 
 #  symbol = 'MDB'
-  symbols = 'OKTA'.split(',')
+  symbols = 'TSLA'.split(',')
 
   for symbol in symbols:
     strat = DerivativeStrategyBase(symbol, side='short')

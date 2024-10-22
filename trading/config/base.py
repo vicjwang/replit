@@ -26,4 +26,4 @@ TRADIER_THROTTLE_PERIOD = 61  # in seconds
 
 NOW = datetime.utcnow()
 NUM_PARALLEL_JOBS = 2
-FORCE_REFRESH = True
+FORCE_REFRESH = False

@@ -6,15 +6,14 @@ from datetime import datetime
 from analysis.models import PriceModel
 
 
-@patch('config.NOW', datetime(2024, 10, 16))
+@patch('config.NOW', datetime(2024, 10, 22))
 class TestModel:
 
   @pytest.fixture
   def model(self):
-    model = PriceModel('TSLA')
+    model = PriceModel('DDOG')
     return model
 
-  @patch('config.NOW', datetime(2024, 10, 16))
   def test_52_low(self, model):
     result = model.get_52_low()
     assert result == 218.16

@@ -12,10 +12,11 @@ from utils import get_sig_level
 
 
 class Build:
-  def __init__(self, symbol, win_proba, *args, **kwargs):
+  def __init__(self, symbol, win_proba, *args, signals=None, **kwargs):
     self.symbol = symbol
     self.win_proba = win_proba
     self._strategy = None
+    self.signals = signals or []
 
   @property
   def strategy(self):
@@ -30,7 +31,16 @@ class Build:
 
   def create_snapshot(self):
     self.validate_conditions()
-    return self._create_snapshot()
+    snapshot = self._create_snapshot()
+
+    signal_max_proba = (1 - self.win_proba) / len(self.signals)
+    for signal in self.signals:
+      snapshot.df[str(signal)] = snapshot.df.apply(lambda row: signal.compute_edge(row, signal_max_proba), axis=1)
+
+    return snapshot
+
+  def add_signals(self, signals):
+    self.signals += signals
 
 
 class SellSimplePutBuild(Build):

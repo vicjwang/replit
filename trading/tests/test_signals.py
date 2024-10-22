@@ -6,23 +6,28 @@ from datetime import datetime
 from unittest.mock import patch
 
 from strategy.builds import SellSimplePutBuild
-from signals import MovingAverageSupportSignal, SignalAggregator
+from signals import MovingAverageSupportSignal
 
 
-@patch('config.NOW', datetime(2024, 10, 21))
-class TestSignalAggregator:
+@patch('config.NOW', datetime(2024, 10, 22))
+class TestSignals:
   
   @pytest.fixture
   def build(self):
-    build = SellSimplePutBuild('TSLA', config.MY_WIN_PROBA)
+    build = SellSimplePutBuild('DDOG', config.MY_WIN_PROBA)
+    price_model = build.price_model
     max_proba = 1 - config.MY_WIN_PROBA
-    build.add_signal(MovingAverageSupportSignal(200, weight=0.5))
+    build.add_signals([
+      MovingAverageSupportSignal(200, price_model, weight=0.5)
+    ])
 #    build.add_signal(FiftyTwoLowSupport())
 
-    return signal_ag
+    return build
   
-  def test_calc_win_adv(self, build):
-    result = build.calc_win_adv()
+  def test_compute_edge(self, build):
+    snapshot = build.create_snapshot()
+    result = snapshot.df.iloc[0]['200_ma_edge'].round(4)
 
-    assert result == 0.03  # 0.029645967
+    assert len(snapshot.df) == 1  # Next earnings is Nov 7 so only 1 week of options.
+    assert result == round(0.01364027538, 4)
 

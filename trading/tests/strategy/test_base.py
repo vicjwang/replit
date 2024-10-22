@@ -32,13 +32,14 @@ if __name__ == '__main__':
   # $ ENV=test poetry run python -m tests.test_derivative_strategy
 
 #  symbol = 'MDB'
-  symbols = 'TSLA'.split(',')
+  symbols = 'DDOG'.split(',')
 
   for symbol in symbols:
     strat = DerivativeStrategyBase(symbol, side='short')
-    snapshot = strat.make_snapshot('put', 0.15)
+    snapshot = strat.make_snapshot('put', 0.1)
     snapshot_csv = SNAPSHOT_CSV_TEMPLATE.format(symbol=symbol, YYYYmmdd=config.NOW.strftime('%Y%m%d'))
 
     assert len(snapshot.df) > 0
 
     snapshot.df.reset_index(drop=True).to_csv(snapshot_csv, index=False, date_format=DATE_FORMAT)
+    print('Writing to', snapshot_csv)

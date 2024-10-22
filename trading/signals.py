@@ -1,17 +1,16 @@
 
 
-
-
 class Signal:
-  def __init__(self, *args, weight=1, **kwargs):
+  def __init__(self, price_model, *args, weight=1, **kwargs):
+    self.price_model = price_model
     self.weight = weight
 
 
 class SupportSignal(Signal):
 
-  def calc_win_adv(self, build, strike):
-    price = build.price_model.get_latest_price()
-    return self.weight * self.max_proba * (price - self.support_price) / (price - strike)
+  def compute_edge(self, row, max_proba):
+    price = self.price_model.get_latest_price()
+    return self.weight * max_proba * (price - self.support_price) / (price - row['strike'])
 
 
 class MovingAverageSupportSignal(SupportSignal):
@@ -19,25 +18,9 @@ class MovingAverageSupportSignal(SupportSignal):
     super().__init__(*args, **kwargs)
     self.n = n
 
-  def calc_win_adv(self, build, strike):
-    self.support_price = build.price_model.get_ma(self.n)
-    return super().calc_win_adv(build, strike)
+  def __str__(self):
+    return "{}_ma_edge".format(self.n)
 
-
-class SignalAggregator:
-  
-  def __init__(self, build, max_proba):
-    self.build = build
-    self.max_proba = max_proba
-    self.signals = []
-
-  def add_signal(self, signal):
-    self.signals.append(signal)
-
-  def calc_win_adv(self):
-    adv = 0
-    signal_max_proba = self.max_proba / len(self.signals)
-    for signal in self.signals:
-      adv += signal.calc_win_adv(self.build, )
-    return adv
-
+  def compute_edge(self, *args):
+    self.support_price = self.price_model.get_ma(self.n)
+    return super().compute_edge(*args)

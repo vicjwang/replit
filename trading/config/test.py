@@ -9,6 +9,6 @@ REGIME_START_DATE = '2023-01-01'
 SHOW_GRAPHS = False
 
 
-NOW = datetime(2024, 10, 21)
+NOW = datetime(2024, 10, 22)
 
 FORCE_REFRESH = False

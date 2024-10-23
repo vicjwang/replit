@@ -10,7 +10,7 @@ Run tests:
 $ ENV=test poetry run pytest -k test_main
 
 Remake snapshot for test_build_snapshot (say after adding new column):
-$ ENV=test poetry run python -m tests.strategy.test_base
+$ ENV=test poetry run pytest tests/strategy/test_base.py --snapshot-update 
 
 Run profiler:
 $ ENV=test poetry run scalene main.py scan -s 0 -t mdb

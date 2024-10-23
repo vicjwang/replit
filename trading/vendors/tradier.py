@@ -118,6 +118,7 @@ def fetch_past_earnings_dates(symbol):
 def fetch_next_earnings_date(symbol):
   earnings_dates = fetch_earnings_dates(symbol, after=config.REGIME_START_DATE)
   today = pd.Timestamp(config.NOW.date())
+  print('vjw fetch_next_earnings_date today', today)
   future_dates = [x for x in earnings_dates if x >= today]
   ret = future_dates[-1]
   return ret

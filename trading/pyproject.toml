@@ -20,6 +20,7 @@ markdown-it-py = "^3.0.0"
 scalene = "^1.5.42.2"
 ratelimit = "^2.2.1"
 freezegun = "^1.5.1"
+syrupy = "^4.7.2"
 
 [tool.pyright]
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md

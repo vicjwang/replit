@@ -100,7 +100,6 @@ class DerivativeStrategyBase:
     if option_type not in ('call', 'put'):
       raise ValueError("Invalid option_type: {option_type}")
 
-
     # Capture closest 2 strikes.
     target_colname = get_target_colname(sig_level)
     graph_df = self.df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])

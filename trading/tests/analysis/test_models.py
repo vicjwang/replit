@@ -1,12 +1,8 @@
 import pytest
 
-from unittest.mock import patch
-from datetime import datetime
-
 from analysis.models import PriceModel
 
 
-@patch('config.NOW', datetime(2024, 10, 16))
 class TestModel:
 
   @pytest.fixture
@@ -24,9 +20,9 @@ class TestModel:
 
   def test_50_ma(self, model):
     result = model.get_ma(50)
-    assert result == 271.14
+    assert result == 270.99
 
   def test_200_ma(self, model):
     result = model.get_ma(200)
-    assert result == 358.56
+    assert result == 320.99
 

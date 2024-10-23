@@ -9,6 +9,7 @@ from constants import DATE_FORMAT
 from strategy.base import DerivativeStrategyBase
 
 
+@patch('config.NOW', datetime(2024, 7, 25))
 class TestDerivativeStrategyBase:
 
   @patch('config.WORTHY_MIN_ROI', 0.2)

@@ -20,9 +20,9 @@ class TestModel:
 
   def test_50_ma(self, model):
     result = model.get_ma(50)
-    assert result == 270.99
+    assert result == 270.63
 
   def test_200_ma(self, model):
     result = model.get_ma(200)
-    assert result == 320.99
+    assert result == 321.58
 

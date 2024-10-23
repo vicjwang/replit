@@ -11,7 +11,6 @@ from strategy.credit_spreads import CreditSpreadStrategy
 
 class TestCreditSpreadStrategy:
 
-  @patch('config.NOW', datetime(2024, 10, 16))
   def test_make_snapshot(self, snapshot):
     symbol = 'MDB'
     strat = CreditSpreadStrategy(symbol, side='short')

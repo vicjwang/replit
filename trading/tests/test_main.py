@@ -19,7 +19,7 @@ class TestMain:
 
   @pytest.fixture
   def tickers(self):
-    return ['DDOG']
+    return ['MDB']
 
   def test_scan_success(self, tickers, figman):
     build = SellSimplePutCreditSpreadBuild

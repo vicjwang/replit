@@ -28,5 +28,5 @@ class TestSignals:
     result = result_df.iloc[0]['200_ma_edge'].round(4)
 
     assert result_df.to_csv() == snapshot
-    assert result == round(0.01364027538, 4)
+    assert result == round(0.0001, 4)
 

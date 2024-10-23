@@ -6,12 +6,12 @@ from datetime import datetime
 from analysis.models import PriceModel
 
 
-@patch('config.NOW', datetime(2024, 10, 22))
+@patch('config.NOW', datetime(2024, 10, 16))
 class TestModel:
 
   @pytest.fixture
   def model(self):
-    model = PriceModel('DDOG')
+    model = PriceModel('MDB')
     return model
 
   def test_52_low(self, model):

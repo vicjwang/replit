@@ -25,6 +25,7 @@ class TestSignals:
     return build
   
   def test_compute_edge(self, build):
+    print('vjw config', config.NOW)
     snapshot = build.create_snapshot()
     result = snapshot.df.iloc[0]['200_ma_edge'].round(4)
 

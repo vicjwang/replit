@@ -15,6 +15,7 @@ from constants import SIDE_SHORT
 class TestSellSimplePutBuild:
 
   def test_validate_move_threshold_success(self):
+    print('vjw', config.NOW)
     tickers = ('MDB',)
     for ticker in tickers:
       SellSimplePutBuild(ticker, config.MY_WIN_PROBA).create_snapshot()

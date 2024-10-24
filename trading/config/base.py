@@ -1,5 +1,7 @@
 from datetime import datetime
 
+REGIME_START_DATE = '2024-01-01'  # includes bear market
+#REGIME_START_DATE = '2022-01-01'  # includes bear market
 
 IS_WIDESCREEN = True
 IS_PHONE = False
@@ -8,7 +10,6 @@ SKIP_GRAPHS = False
 SHOW_GRAPHS = True
 IS_DEBUG = False
 IS_VERBOSE = False
-REGIME_START_DATE = '2022-01-01'  # includes bear market
 SHOULD_AVOID_EARNINGS = True
 MIN_EXPIRY_DATESTR = '2025-01-01'
 USE_EARNINGS_CSV = False
@@ -21,11 +22,11 @@ MAX_STRIKE = 280
 FROZEN_TEST_DATE = '2024-07-22'
 CACHE_DIR = './cache'
 
-TRADIER_THROTTLE_RATE = 59  # per minute
+TRADIER_THROTTLE_RATE = 119 # per minute
 TRADIER_THROTTLE_PERIOD = 61  # in seconds
 
 NOW = datetime.utcnow()
-NUM_PARALLEL_JOBS = 2
+NUM_PARALLEL_JOBS = 4
 FORCE_REFRESH = False
 
 SIGNAL_MAX_PROBA_GLOBAL = 0.025

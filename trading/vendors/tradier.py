@@ -22,13 +22,17 @@ TRADIER_API_KEY = os.environ['TRADIER_API_KEY']
 @sleep_and_retry
 @limits(calls=config.TRADIER_THROTTLE_RATE, period=config.TRADIER_THROTTLE_PERIOD)
 def make_api_request(endpoint, params):
-  response = requests.get(
-    endpoint,
-    params=params,
-    headers={'Authorization': f'Bearer {TRADIER_API_KEY}', 'Accept': 'application/json'}
-  )
-  json_response = response.json()
-  return json_response
+  try:
+    response = requests.get(
+      endpoint,
+      params=params,
+      headers={'Authorization': f'Bearer {TRADIER_API_KEY}', 'Accept': 'application/json'}
+    )
+    json_response = response.json()
+    return json_response
+  except Exception as e:
+    print('Exception response header:\n', response.headers)
+    raise e
 
 
 @cached(use_time=is_market_hours())

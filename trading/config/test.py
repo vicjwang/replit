@@ -10,6 +10,6 @@ SHOW_GRAPHS = False
 
 
 # This cannot be patched at test runtime because @cached decorator is run once at definition time.
-NOW = datetime(2024, 10, 23)
+NOW = datetime(2024, 10, 24)  # UTC implicit but do not specify tzinfo on purpose.
 
 FORCE_REFRESH = False

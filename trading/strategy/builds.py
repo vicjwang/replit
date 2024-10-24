@@ -35,8 +35,12 @@ class Build:
 
     if self.signals:
       signal_max_proba = (1 - self.win_proba) / len(self.signals)
+      kwargs = {
+        'win_proba': self.win_proba,
+        'price_model': self.price_model,
+      }
       for signal in self.signals:
-        snapshot.df[str(signal)] = snapshot.df.apply(lambda row: signal.compute_edge(self.price_model, row, signal_max_proba), axis=1)
+        snapshot.df[str(signal)] = snapshot.df.apply(lambda row: signal.compute_edge(row, signal_max_proba, **kwargs), axis=1)
 
     return snapshot
 

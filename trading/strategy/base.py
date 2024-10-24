@@ -78,6 +78,7 @@ class DerivativeStrategyBase:
         target_strike = self.price_model.predict_price(trading_dte, xscore)
         colname = get_target_colname(sig_level)
         chain_df[colname] = target_strike
+        print('vjw target strike', expiry_date, trading_dte, colname, target_strike)
 
       chain_dfs.append(chain_df)
       

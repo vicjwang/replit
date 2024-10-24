@@ -114,13 +114,13 @@ def fetch_earnings_dates(symbol, after:str=None):
 
 
 @cached()
-def fetch_past_earnings_dates(symbol):
-  earnings_dates = fetch_earnings_dates(symbol, after=config.REGIME_START_DATE)
+def fetch_past_earnings_dates(symbol, after=config.REGIME_START_DATE_DEFAULT):
+  earnings_dates = fetch_earnings_dates(symbol, after=after)
   return [x for x in earnings_dates if x < config.NOW]
 
 
-def fetch_next_earnings_date(symbol):
-  earnings_dates = fetch_earnings_dates(symbol, after=config.REGIME_START_DATE)
+def fetch_next_earnings_date(symbol, after=config.REGIME_START_DATE_DEFAULT):
+  earnings_dates = fetch_earnings_dates(symbol, after=after)
   today = pd.Timestamp(config.NOW.date())
   future_dates = [x for x in earnings_dates if x >= today]
   ret = future_dates[-1]

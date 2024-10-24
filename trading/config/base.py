@@ -1,7 +1,10 @@
 from datetime import datetime
 
-REGIME_START_DATE = '2024-01-01'  # includes bear market
-#REGIME_START_DATE = '2022-01-01'  # includes bear market
+
+REGIME_START_DATE_DEFAULT = '2022-01-01'  # includes bear market
+TICKER_REGIME_START_DATE = dict(
+  MDB='2024-03-08',  # date of first < 200MA
+)
 
 IS_WIDESCREEN = True
 IS_PHONE = False

@@ -32,15 +32,22 @@ class PriceModel:
   _COLNAME_DATE = 'date'
   _COLNAME_PREV_DAY = 'previous_trading_date'
 
-  def __init__(self, symbol, start_date=config.REGIME_START_DATE, avoid_earnings=config.SHOULD_AVOID_EARNINGS):
+  def __init__(self, symbol, start_date=None, avoid_earnings=config.SHOULD_AVOID_EARNINGS):
     self.symbol = symbol
 
+    if start_date is None:
+      self.start_date = config.TICKER_REGIME_START_DATE.get(self.symbol) or config.REGIME_START_DATE_DEFAULT
+    else:
+      self.start_date = start_date
+
+    print('vjw start', self.start_date, config.TICKER_REGIME_START_DATE, self.symbol)
+
     # Sorted in most recent first.
-    self.past_earnings_dates = fetch_past_earnings_dates(symbol)
-    self.next_earnings_date = fetch_next_earnings_date(symbol)
+    self.past_earnings_dates = fetch_past_earnings_dates(symbol, after=self.start_date)
+    self.next_earnings_date = fetch_next_earnings_date(symbol, after=self.start_date)
 
     # Some helper columns.
-    self.prices_df = pd.DataFrame(fetch_historical_prices(symbol, start_date))
+    self.prices_df = pd.DataFrame(fetch_historical_prices(symbol, self.start_date))
     self.prices_df[self._COLNAME_DATE] = pd.to_datetime(self.prices_df[self._COLNAME_DATE])
     self.prices_df[self._COLNAME_PREV_DAY] = pd.to_datetime(self.prices_df[self._COLNAME_DATE].shift(1))
     self.prices_df[self._COLNAME_DAILY_CHANGE] = self.calc_marginal_change(self.prices_df)

@@ -85,7 +85,6 @@ class CreditSpreadStrategy(DerivativeStrategyBase):
 
 
 class CreditSpreadSnapshot(DerivativeStrategySnapshot):
-
   def graph_roi_vs_expiry(self, ax):
     # TODO: combine legs? color code?
     target_colname = get_target_colname(self.sig_level)
@@ -123,6 +122,10 @@ class CreditSpreadSnapshot(DerivativeStrategySnapshot):
     thetas = self.df['theta']
     gammas = self.df['gamma']
     vegas = self.df['vega']
+    move_edges = self.df['move_edge']
+    delta_edges = self.df['delta_edge']
+    low_52_edges = self.df['52_low_edge']
+    ma_200_edges = self.df['200_ma_edge']
     tooltip_map = dict()
     for i, xy in enumerate(zip(xs, ys)):
       expiry, roi = xy
@@ -137,15 +140,19 @@ class CreditSpreadSnapshot(DerivativeStrategySnapshot):
       theta = thetas.iloc[i].round(4)
       gamma = gammas.iloc[i].round(4)
       vega = vegas.iloc[i].round(4)
+      move_edge = move_edges.iloc[i].round(4)
+      delta_edge = delta_edges.iloc[i].round(4)
+      low_52_edge = low_52_edges.iloc[i].round(4)
+      ma_200_edge = ma_200_edges.iloc[i].round(4)
       key = (expiry_at, roi)
-      tooltip_map[key] = (dte, target_strike, strike, bid, volume, vol, delta, theta, gamma, vega)
+      tooltip_map[key] = (dte, target_strike, strike, bid, volume, vol, delta, theta, gamma, vega, move_edge, delta_edge, low_52_edge, ma_200_edge)
 
     @cursor.connect('add')
     def on_add(sel):
       expiry_at = mdates.num2date(sel.target[0]).strftime(DATE_FORMAT)
       roi = sel.target[1]
       key = (expiry_at, roi)
-      dte, target_strike, strike, bid, volume, vol, delta, theta, gamma, vega = tooltip_map[key]
+      dte, target_strike, strike, bid, volume, vol, delta, theta, gamma, vega, move_edge, delta_edge, low_52_edge, ma_200_edge = tooltip_map[key]
       text = '\n'.join([
         f"expiry={expiry_at}",
         f"dte={dte}",
@@ -157,7 +164,12 @@ class CreditSpreadSnapshot(DerivativeStrategySnapshot):
         f"delta={delta}",
         f"theta={theta}",
         f"gamma={gamma}",
-        f"vega={vega}"
+        f"vega={vega}",
+        f"move edge={move_edge}",
+        f"delta edge={delta_edge}",
+        f"52 low edge={low_52_edge}",
+        f"200 ma edge={ma_200_edge}",
+        f"total edge={move_edge + delta_edge + low_52_edge + ma_200_edge}",
       ])
 
       sel.annotation.set(text=text)

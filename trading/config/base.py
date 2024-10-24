@@ -8,7 +8,7 @@ SKIP_GRAPHS = False
 SHOW_GRAPHS = True
 IS_DEBUG = False
 IS_VERBOSE = False
-REGIME_START_DATE = '2023-01-01'  # includes bear market
+REGIME_START_DATE = '2022-01-01'  # includes bear market
 SHOULD_AVOID_EARNINGS = True
 MIN_EXPIRY_DATESTR = '2025-01-01'
 USE_EARNINGS_CSV = False
@@ -27,3 +27,5 @@ TRADIER_THROTTLE_PERIOD = 61  # in seconds
 NOW = datetime.utcnow()
 NUM_PARALLEL_JOBS = 2
 FORCE_REFRESH = False
+
+SIGNAL_MAX_PROBA_GLOBAL = 0.025

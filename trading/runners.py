@@ -4,6 +4,12 @@ import config
 
 from joblib import Parallel, delayed
 
+from signals import (
+  MoveSignal,
+  DeltaSignal,
+  FiftyTwoLowSupportSignal,
+  MovingAverageSupportSignal,
+)
 from utils import strformat, get_win_proba
 
 
@@ -26,8 +32,14 @@ class Scanner(Runner):
     self.win_proba = win_proba
 
   def _run_iter(self, symbol):
+    signals = [
+      MoveSignal(),
+      DeltaSignal(),
+      FiftyTwoLowSupportSignal(),
+      MovingAverageSupportSignal(200, weight=0.5),
+    ]
     try:
-      snapshot = self.build(symbol, self.win_proba).create_snapshot()
+      snapshot = self.build(symbol, self.win_proba, signals=signals).create_snapshot()
       if snapshot:
         self.figman.add_graph_as_ax(snapshot.graph_roi_vs_expiry)
         print(strformat(snapshot.symbol, f"Adding subplot (WORTHY_MIN_BID={config.WORTHY_MIN_BID}, WORTHY_MIN_ROI={config.WORTHY_MIN_ROI})\n \"{snapshot.title}\"\n"))

@@ -43,7 +43,7 @@ class CreditSpreadStrategy(DerivativeStrategyBase):
 
     # Capture closest strike to long leg.
     win_proba = get_win_proba('short', option_type, sig_level)
-    long_leg_df = grouped_df.apply(lambda x: x.iloc[(abs(x['strike'] - (x[target_colname] - calc_spread(win_proba, x['bid'])))).argsort()[:1]])
+    long_leg_df = grouped_df.apply(lambda x: x.iloc[(abs(x['strike'] - (x[target_colname] - calc_spread(win_proba, x['bid'])))).dropna().argsort()[:1]])
     graph_df = pd.concat([short_leg_df.reset_index(drop=True), long_leg_df.reset_index(drop=True)])
 
     strike_mask = (graph_df['strike'] < config.MAX_STRIKE)
@@ -64,7 +64,13 @@ class CreditSpreadStrategy(DerivativeStrategyBase):
     graph_df = graph_df[mask].reset_index(drop=True)
 
     if len(graph_df) == 0:
-      raise ValueError(f"No eligible options to graph (option_type={option_type}, expiry_after={expiry_after}, expiry_before={expiry_before}).")
+      error_msg = f"""
+      No eligible options to graph (option_type={option_type}, expiry_after={expiry_after}, expiry_before={expiry_before}).
+      any(strike_mask)={any(strike_mask)}
+      any(otm_only_mask)={any(otm_only_mask)}
+      any(mask)={any(mask)}
+      """
+      raise ValueError(error_msg)
 
     mu = self.price_model.get_daily_mean()
     sigma = self.price_model.get_daily_stdev()

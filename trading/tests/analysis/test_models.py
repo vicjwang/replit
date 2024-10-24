@@ -1,5 +1,7 @@
 import pytest
 
+from unittest.mock import patch
+
 from analysis.models import PriceModel
 
 
@@ -26,3 +28,12 @@ class TestModel:
     result = model.get_ma(200)
     assert result == 320.99
 
+  @patch('analysis.models.is_market_hours', lambda: True)
+  def test_latest_change_during_market_hours(self, model):
+    result = model.get_latest_change()
+    # Snapshot was taken outside market hours so expect tiny difference.
+    assert round(result) == 0
+
+  def test_latest_change_outside_market_hours(self, model):
+    result = model.get_latest_change()
+    assert round(result, 4) == -0.0131

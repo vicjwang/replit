@@ -101,3 +101,6 @@ def read_earnings_dates_from_csv(symbol):
     dates = f.read().splitlines()
     return dates
 
+
+def compute_cdf(zscore):
+  return stats.norm.cdf(zscore)

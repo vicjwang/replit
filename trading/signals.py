@@ -1,3 +1,4 @@
+from utils import compute_cdf
 
 
 class Signal:
@@ -52,3 +53,16 @@ class DeltaSignal(Signal):
     lose_proba = 1 - kwargs['win_proba']
     delta = abs(row['delta'])
     return max_proba * (1 - lose_proba / delta) if lose_proba < delta else 0
+
+
+class MoveSignal(Signal):
+  def __str__(self):
+    return 'move_edge'
+
+  def compute_edge(self, row, max_proba, **kwargs):
+    # Assume option type = put.
+    price_model = kwargs['price_model']
+    move = price_model.get_latest_change()
+    sigma = price_model.get_daily_stdev()
+    zscore = move / sigma
+    return max_proba * (0.5 - compute_cdf(zscore)) / 0.5 if move < 0 else 0

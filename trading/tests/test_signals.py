@@ -10,6 +10,7 @@ from signals import (
   DeltaSignal,
   MovingAverageSupportSignal,
   FiftyTwoLowSupportSignal,
+  MoveSignal,
 )
 
 
@@ -105,7 +106,6 @@ class TestSignalsComputeEdge:
     assert result_df.to_csv() == snapshot
     assert result == 0
 
-
   def test_delta_zero(self, build_ddog, snapshot):
     build_ddog.add_signals([
       DeltaSignal(),
@@ -127,3 +127,32 @@ class TestSignalsComputeEdge:
     assert result_df.to_csv() == snapshot
     assert result1 == 0.0742
     assert result2 == 0.0509
+
+  def test_move_zero(self, build_ddog, snapshot):
+    build = build_ddog
+    build.add_signals([
+      MoveSignal(),
+    ])
+    result_df = build.create_snapshot().df
+    result1 = result_df.iloc[0]['move_edge'].round(4)
+
+    assert result_df.to_csv() == snapshot
+    assert result1 == 0.0667
+
+  def test_move_nonzero(self):
+    pass
+
+  def test_many_signals(self, build_ddog, snapshot):
+    signals = [
+      MoveSignal(),
+      DeltaSignal(),
+      FiftyTwoLowSupportSignal(),
+      MovingAverageSupportSignal(200, weight=0.5),
+    ]
+    build_ddog.add_signals(signals)
+
+    result_df = build_ddog.create_snapshot().df
+    result1 = result_df.loc[0, [str(x) for x in signals]].sum().round(4)
+
+    assert result_df.to_csv() == snapshot
+    assert result1 == 0.0167  # Only MoveSignal is nonzero.

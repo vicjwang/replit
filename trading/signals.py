@@ -1,16 +1,24 @@
 
 
 class Signal:
-  def __init__(self, price_model, *args, weight=1, **kwargs):
-    self.price_model = price_model
+  def __init__(self, *args, weight=1, **kwargs):
     self.weight = weight
 
 
 class SupportSignal(Signal):
+  
+  def __str__(self):
+    raise NotImplementedError
 
-  def compute_edge(self, row, max_proba):
-    price = self.price_model.get_latest_price()
-    return self.weight * max_proba * (price - self.support_price) / (price - row['strike'])
+  def validate_conditions(self, price, strike):
+    return price > self.support_price and strike < self.support_price
+
+  def compute_edge(self, price_model, row, max_proba):
+    price = price_model.get_latest_price()
+    strike = row['strike']
+    if not self.validate_conditions(price, strike):
+      return 0
+    return self.weight * max_proba * (price - self.support_price) / (price - strike)
 
 
 class MovingAverageSupportSignal(SupportSignal):
@@ -21,6 +29,15 @@ class MovingAverageSupportSignal(SupportSignal):
   def __str__(self):
     return "{}_ma_edge".format(self.n)
 
-  def compute_edge(self, *args):
-    self.support_price = self.price_model.get_ma(self.n)
-    return super().compute_edge(*args)
+  def compute_edge(self, price_model, *args):
+    self.support_price = price_model.get_ma(self.n)
+    return super().compute_edge(price_model, *args)
+
+
+class FiftyTwoLowSupportSignal(SupportSignal):
+  def __str__(self):
+    return '52_low_edge'
+
+  def compute_edge(self, price_model, *args):
+    self.support_price = price_model.get_52_low()
+    return super().compute_edge(price_model, *args)

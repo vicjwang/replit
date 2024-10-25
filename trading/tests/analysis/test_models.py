@@ -36,7 +36,7 @@ class TestModel:
 
   def test_latest_change_outside_market_hours(self, model):
     result = model.get_latest_change()
-    assert round(result, 4) == -0.0131
+    assert round(result, 4) == -0.0003
 
   def test_start_date(self, model):
     result = model.start_date

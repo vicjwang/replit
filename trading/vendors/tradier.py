@@ -37,6 +37,7 @@ def make_api_request(endpoint, params):
 
 @cached(use_time=is_market_hours())
 def fetch_latest_price(symbol: str) -> float:
+  # Will pull current price or last close.
   endpoint = 'https://api.tradier.com/v1/markets/quotes'
   params = {'symbols': symbol, 'greeks': 'false'}
   return make_api_request(endpoint, params)['quotes']['quote']['last']

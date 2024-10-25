@@ -29,6 +29,7 @@ class PriceModel:
   _COLNAME_DAILY_CHANGE = 'daily_change'
   _COLNAME_IS_EARNINGS = 'is_earnings'
   _COLNAME_CLOSE = 'close'
+  _COLNAME_OPEN = 'open'
   _COLNAME_DATE = 'date'
   _COLNAME_PREV_DAY = 'previous_trading_date'
 
@@ -73,14 +74,9 @@ class PriceModel:
     return fetch_latest_price(self.symbol)
 
   def get_latest_change(self):
-    # During market hours, last row is yesterday's closing price.
-    # Outside market hours, last row is latest closing price aka should match get_latest_price.
-    if is_market_hours():
-      index = -1
-    else:
-      index = -2
-    last_close = self.prices_df.iloc[index][self._COLNAME_CLOSE]
-    return (self.get_latest_price() - last_close) / last_close
+    latest_price = self.get_latest_price()
+    ref_price = self.prices_df.iloc[-1][self._COLNAME_CLOSE]
+    return np.log(latest_price/ref_price)
 
   def get_daily_mean(self):
     return self.daily_mean

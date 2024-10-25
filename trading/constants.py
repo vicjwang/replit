@@ -8,23 +8,6 @@ from config import IS_WIDESCREEN, IS_PHONE
 T_SIG_LEVELS = [0.01, .025, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.5,
                 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 0.975, 0.99]
 
-PHI_ZSCORE = {
-  # Includes entire left tail aka values directly taken from Standard Normal Table.
-  0.01: -2.33,
-  0.025: -1.96,
-  0.05: -1.645,
-  0.1: -1.28,
-  0.15: -1.036,
-  0.16: -1,
-  0.5: 0,
-  0.84: 1,
-  0.85: 1.036,
-  0.90: 1.28,
-  0.95: 1.645,
-  0.975: 1.96,
-  0.99: 2.33,
-}
-
 FIG_WIDTH = 5 if IS_PHONE else 26 if IS_WIDESCREEN else 13.5
 FIG_HEIGHT = 6 if IS_PHONE else 10 if IS_WIDESCREEN else 7.5
 FIG_NCOLS = 1 if IS_PHONE else 2
@@ -103,30 +86,3 @@ WATCHLIST = dict(
 
 DATE_FORMAT = '%Y-%m-%d'
 EASTERN_TZ = pytz.timezone('US/Eastern')
-
-
-################
-## Deprecated ##
-################
-WIN_PROBA_ZSCORE = dict(
-  short=dict(
-    # For short put (aka CSEP), to keep premium without assignment aka expire OTM:
-    #   - 84 win proba -> zscore = -1
-    #   - 50 win proba -> zscore = 0
-    #   - 16 win proba -> zscore = 1
-    put={p: -1*z for p, z in PHI_ZSCORE.items()},
-  
-    # For short call (aka CC), to keep premium without assignment aka expire OTM:
-    #   - 84 win proba -> zscore = 1
-    #   - 50 win proba -> zscore = 0
-    #   - 16 win proba -> zscore = -1
-    call=PHI_ZSCORE.copy(),
-  )
-)
-ZSCORE_WIN_PROBA = dict(
-  short=dict(
-    put={z: p for p, z in WIN_PROBA_ZSCORE['short']['put'].items()},
-    call={z: p for p, z in WIN_PROBA_ZSCORE['short']['call'].items()},
-  )
-)
-

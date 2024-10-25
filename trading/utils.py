@@ -49,6 +49,10 @@ def get_tscore(a, dof):
   return stats.t.ppf(a, dof)
 
 
+def get_zscore(phi):
+  return stats.norm.ppf(phi)
+
+
 def get_target_colname(sig_level, suffix='target'):
   return f"{round(sig_level, 3)}_{suffix}"
 

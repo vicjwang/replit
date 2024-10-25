@@ -14,7 +14,7 @@ from constants import SIDE_SHORT
 class TestSellSimplePutBuild:
 
   def test_validate_move_threshold_success(self):
-    tickers = ('MDB', 'NVDA', 'TSLA')
+    tickers = ('MDB', 'NVDA')
     for ticker in tickers:
       SellSimplePutBuild(ticker, config.MY_WIN_PROBA).create_snapshot()
       assert True
@@ -27,7 +27,7 @@ class TestSellSimplePutBuild:
 
   @patch('config.MIN_ZSCORE_THRESHOLD', 0.85)
   def test_move_threshold_error(self):
-    tickers = ('HTZ', 'SNAP', 'TXN')
+    tickers = ('HTZ', 'SNAP', 'TXN', 'TSLA')
     for ticker in tickers:
       with pytest.raises(ValueError):
         SellSimplePutBuild(ticker, config.MY_WIN_PROBA).create_snapshot()

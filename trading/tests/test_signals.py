@@ -75,16 +75,18 @@ class TestSignalsComputeEdge:
     assert result_df.to_csv() == snapshot
     assert result == round(0.0001, 4)
 
-  def test_200ma_zero(self, build_okta, snapshot):
-    build_okta.add_signals([
+  def test_200ma_zero(self, build_nvda, snapshot):
+    build_nvda.add_signals([
       MovingAverageSupportSignal(200, weight=0.5)
     ])
-    result_df = build_okta.create_snapshot().df
+    result_df = build_nvda.create_snapshot().df
     result = result_df.iloc[0]['200_ma_edge'].round(4)
 
     assert result_df.to_csv() == snapshot
     assert result == 0
 
+  # Okta daily move actually slightly positive.
+  @patch('strategy.builds.SellSimplePutBuild.validate_conditions', lambda self: True)
   def test_52_low_nonzero(self, build_okta, snapshot):
     build_okta.add_signals([
       FiftyTwoLowSupportSignal(weight=0.5)

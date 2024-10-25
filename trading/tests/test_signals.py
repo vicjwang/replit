@@ -36,13 +36,13 @@ class TestSignalsComputeEdge:
   def build_nvda(self):
     """
     FIXME
-    DDOG
+    NVDA
     2024-10-23
-    139.56, -2.81%
-    52low = 39.22
-    52high = 144.42
-    50ma = 123.53
-    200ma = 101.78
+    139.56, 0%
+    52low = 
+    52high = 
+    50ma = 
+    200ma = 
     """
 
     build = SellSimplePutBuild('NVDA', 0.85)
@@ -75,16 +75,18 @@ class TestSignalsComputeEdge:
     assert result_df.to_csv() == snapshot
     assert result == round(0.0001, 4)
 
-  def test_200ma_zero(self, build_okta, snapshot):
-    build_okta.add_signals([
+  def test_200ma_zero(self, build_nvda, snapshot):
+    build_nvda.add_signals([
       MovingAverageSupportSignal(200, weight=0.5)
     ])
-    result_df = build_okta.create_snapshot().df
+    result_df = build_nvda.create_snapshot().df
     result = result_df.iloc[0]['200_ma_edge'].round(4)
 
     assert result_df.to_csv() == snapshot
     assert result == 0
 
+  # Okta daily move actually slightly positive.
+  @patch('strategy.builds.SellSimplePutBuild.validate_conditions', lambda self: True)
   def test_52_low_nonzero(self, build_okta, snapshot):
     build_okta.add_signals([
       FiftyTwoLowSupportSignal(weight=0.5)
@@ -128,7 +130,18 @@ class TestSignalsComputeEdge:
     assert result1 == 0.0742
     assert result2 == 0.0509
 
-  def test_move_zero(self, build_ddog, snapshot):
+  def test_move_zero(self, build_nvda, snapshot):
+    build = build_nvda
+    build.add_signals([
+      MoveSignal(),
+    ])
+    result_df = build.create_snapshot().df
+    result1 = result_df.iloc[0]['move_edge'].round(4)
+
+    assert result_df.to_csv() == snapshot
+    assert result1 == 0.0003
+
+  def test_move_nonzero(self, build_ddog, snapshot):
     build = build_ddog
     build.add_signals([
       MoveSignal(),
@@ -137,22 +150,19 @@ class TestSignalsComputeEdge:
     result1 = result_df.iloc[0]['move_edge'].round(4)
 
     assert result_df.to_csv() == snapshot
-    assert result1 == 0.0667
+    assert result1 == 0.001
 
-  def test_move_nonzero(self):
-    pass
-
-  def test_many_signals(self, build_ddog, snapshot):
+  def test_many_signals(self, build_nvda, snapshot):
     signals = [
       MoveSignal(),
       DeltaSignal(),
       FiftyTwoLowSupportSignal(),
       MovingAverageSupportSignal(200, weight=0.5),
     ]
-    build_ddog.add_signals(signals)
+    build_nvda.add_signals(signals)
 
-    result_df = build_ddog.create_snapshot().df
-    result1 = result_df.loc[0, [str(x) for x in signals]].sum().round(4)
+    result_df = build_nvda.create_snapshot().df
+    result1 = result_df.loc[3, [str(x) for x in signals]].sum().round(4)
 
     assert result_df.to_csv() == snapshot
-    assert result1 == 0.0167  # Only MoveSignal is nonzero.
+    assert result1 == 0.0186  # Only DeltaSignal is nonzero

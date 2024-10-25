@@ -65,4 +65,5 @@ class MoveSignal(Signal):
     move = price_model.get_latest_change()
     sigma = price_model.get_daily_stdev()
     zscore = move / sigma
-    return max_proba * (0.5 - compute_cdf(zscore)) / 0.5 if move < 0 else 0
+    phi = compute_cdf(zscore)
+    return max_proba * (0.5 - phi) / 0.5 if move < 0 else 0

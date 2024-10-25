@@ -65,10 +65,10 @@ class CreditSpreadStrategy(DerivativeStrategyBase):
 
     if len(graph_df) == 0:
       error_msg = f"""
-      No eligible options to graph (option_type={option_type}, expiry_after={expiry_after}, expiry_before={expiry_before}).
-      any(strike_mask)={any(strike_mask)}
-      any(otm_only_mask)={any(otm_only_mask)}
-      any(mask)={any(mask)}
+        No eligible options to graph (option_type={option_type}, expiry_after={expiry_after}, expiry_before={expiry_before}).
+        any(strike_mask)={any(strike_mask)}
+        any(otm_only_mask)={any(otm_only_mask)}
+        any(mask)={any(mask)}
       """
       raise ValueError(error_msg)
 

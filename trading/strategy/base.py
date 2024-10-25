@@ -12,7 +12,6 @@ from constants import (
   DELTA_UPPER,
   MU,
   SIGMA_LOWER,
-  PHI_ZSCORE,
   T_SIG_LEVELS,
 )
 from utils import (
@@ -21,6 +20,7 @@ from utils import (
   get_win_proba,
   get_target_colname,
   get_tscore,
+  get_zscore,
 )
 from vendors.tradier import (
   fetch_options_expirations,
@@ -74,7 +74,7 @@ class DerivativeStrategyBase:
       dof = trading_dte - 1
       for sig_level in sorted(T_SIG_LEVELS):
         # T-score does not exist for dof = 0 so default to Normal since sigma is 1 day move anyways.
-        xscore = get_tscore(sig_level, dof) or PHI_ZSCORE[sig_level]
+        xscore = get_tscore(sig_level, dof) or get_zscore(sig_level)
         target_strike = self.price_model.predict_price(trading_dte, xscore)
         colname = get_target_colname(sig_level)
         chain_df[colname] = target_strike
@@ -128,7 +128,13 @@ class DerivativeStrategyBase:
     graph_df = graph_df[mask].reset_index(drop=True)
 
     if len(graph_df) == 0:
-      raise ValueError(f"No eligible options to graph (option_type={option_type}, expiry_after={expiry_after}, expiry_before={expiry_before}).")
+      error_msg = f"""
+        No eligible options to graph (option_type={option_type}, expiry_after={expiry_after}, expiry_before={expiry_before}).
+        any(strike_mask)={any(strike_mask)}
+        any(otm_only_mask)={any(otm_only_mask)}
+        any(mask)={any(mask)}
+      """
+      raise ValueError(error_msg)
 
     mu = self.price_model.get_daily_mean()
     sigma = self.price_model.get_daily_stdev()

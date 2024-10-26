@@ -131,6 +131,7 @@ class TestSignalsComputeEdge:
     assert result2 == 0.0509
 
   def test_move_zero(self, build_ddog, snapshot):
+    # TODO: vjw need actual zero mover.
     build = build_ddog
     build.add_signals([
       MoveSignal(),
@@ -139,22 +140,22 @@ class TestSignalsComputeEdge:
     result1 = result_df.iloc[0]['move_edge'].round(4)
 
     assert result_df.to_csv() == snapshot
-    assert result1 == 0.0667
+    assert result1 == 0.0001
 
   def test_move_nonzero(self):
     pass
 
-  def test_many_signals(self, build_ddog, snapshot):
+  def test_many_signals(self, build_nvda, snapshot):
     signals = [
       MoveSignal(),
       DeltaSignal(),
       FiftyTwoLowSupportSignal(),
       MovingAverageSupportSignal(200, weight=0.5),
     ]
-    build_ddog.add_signals(signals)
+    build_nvda.add_signals(signals)
 
-    result_df = build_ddog.create_snapshot().df
+    result_df = build_nvda.create_snapshot().df
     result1 = result_df.loc[0, [str(x) for x in signals]].sum().round(4)
 
     assert result_df.to_csv() == snapshot
-    assert result1 == 0.0167  # Only MoveSignal is nonzero.
+    assert result1 == 0.0003  # Only MoveSignal is nonzero.

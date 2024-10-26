@@ -13,3 +13,9 @@
   
   '''
 # ---
+# name: TestDerivativeStrategyBase.test_test
+     a  b
+  0  1  4
+  1  2  5
+  2  3  6
+# ---

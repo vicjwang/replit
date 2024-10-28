@@ -44,6 +44,7 @@ def get_win_proba(side, option_type, sig_level):
 def get_tscore(a, dof):
   # a := alpha aka "significance level" of "single tail"
   # dof := degrees of freedom
+  # NOTE: Assumes underlying distribution is normal.
   if dof == 0:
     return None
   return stats.t.ppf(a, dof)

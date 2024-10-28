@@ -22,6 +22,7 @@ TRADIER_API_KEY = os.environ['TRADIER_API_KEY']
 @sleep_and_retry
 @limits(calls=config.TRADIER_THROTTLE_RATE, period=config.TRADIER_THROTTLE_PERIOD)
 def make_api_request(endpoint, params):
+  response = None
   try:
     response = requests.get(
       endpoint,
@@ -30,8 +31,10 @@ def make_api_request(endpoint, params):
     )
     json_response = response.json()
     return json_response
-  except Exception as e:
+  except (MaxRetryError, NewConnectionError) as e:
     print('Exception response header:\n', response.headers)
+    raise e
+  except Exception as e:
     raise e
 
 

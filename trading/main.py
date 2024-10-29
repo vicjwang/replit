@@ -5,7 +5,7 @@ import traceback
 import config
 
 from constants import (
-  SIDE_SHORT,
+  SIDE_SHORT, WATCHLIST
 )
 from graphing import FigureManager
 from runners import Scanner, PutDiver
@@ -23,7 +23,7 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   cmd = args.command
-  tickers = args.tickers.upper().split(',') if args.tickers else None
+  tickers = args.tickers.upper().split(',') if args.tickers else WATCHLIST.keys()
   strategy_input = args.strategy
   win_proba = float(args.proba) if args.proba else config.MY_WIN_PROBA
 

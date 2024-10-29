@@ -175,7 +175,7 @@ class CreditSpreadSnapshot(DerivativeStrategySnapshot):
         f"delta edge={delta_edge}",
         f"52 low edge={low_52_edge}",
         f"200 ma edge={ma_200_edge}",
-        f"total edge={move_edge + delta_edge + low_52_edge + ma_200_edge}",
+        f"total edge={round(move_edge + delta_edge + low_52_edge + ma_200_edge, 4)}",
       ])
 
       sel.annotation.set(text=text)

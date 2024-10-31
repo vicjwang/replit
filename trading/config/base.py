@@ -3,7 +3,9 @@ from datetime import datetime
 
 REGIME_START_DATE_DEFAULT = '2022-01-01'  # includes bear market
 TICKER_REGIME_START_DATE = dict(
-  MDB='2024-03-08',  # date of first < 200MA
+  MDB='2023-01-01',
+  TSM='2023-01-01',
+  TXN='2023-01-01',
 )
 
 IS_WIDESCREEN = True

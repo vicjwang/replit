@@ -62,3 +62,5 @@ class FigureManager:
     if config.SHOW_GRAPHS:
       print('Rendering in Output tab...')
       plt.show()
+    else:
+      print(f"config.SHOW_GRAPHS={config.SHOW_GRAPHS}")

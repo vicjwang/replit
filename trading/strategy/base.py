@@ -95,14 +95,16 @@ class DerivativeStrategyBase:
   def get_price_model(self):
     return self.price_model
 
-  def make_snapshot(self, option_type, sig_level, expiry_after=None, expiry_before=None):
+  def get_snapshot_class(self):
+    return DerivativeStrategySnapshot
 
-    if option_type not in ('call', 'put'):
-      raise ValueError("Invalid option_type: {option_type}")
-
+  def _prepare_df(self, sig_level, option_type):
     # Capture closest 2 strikes.
     target_colname = get_target_colname(sig_level)
     graph_df = self.df.groupby(by='expiration_date').apply(lambda x: x.iloc[(abs(x['strike'] - x[target_colname])).argsort()[:2]])
+    return graph_df
+
+  def _apply_filters(self, graph_df, option_type, expiry_after, expiry_before):
 
     strike_mask = (graph_df['strike'] < config.MAX_STRIKE)
 
@@ -136,6 +138,20 @@ class DerivativeStrategyBase:
       """
       raise ValueError(error_msg)
 
+    return graph_df
+
+  def make_snapshot(self, option_type, sig_level, expiry_after=None, expiry_before=None):
+
+    if option_type not in ('call', 'put'):
+      raise ValueError("Invalid option_type: {option_type}")
+
+    # Prepare dataframe by finding best strikes.
+    graph_df = self._prepare_df(sig_level, option_type)
+
+    # Apply filters.
+    graph_df = self._apply_filters(graph_df, option_type, expiry_after, expiry_before)
+
+    # Return snapshot.
     mu = self.price_model.get_daily_mean()
     sigma = self.price_model.get_daily_stdev()
     latest_price = self.price_model.get_latest_price()
@@ -150,8 +166,9 @@ class DerivativeStrategyBase:
       f'{MU}={mu * 100:.2f}%',
       f'{SIGMA_LOWER}={sigma * 100:.2f}%',
     ))
-    return DerivativeStrategySnapshot(self.symbol, graph_df, self.side, option_type,
-                                      sig_level, title=title, text=text, next_earnings=next_earnings)
+    snapshot_class = self.get_snapshot_class()
+    return snapshot_class(self.symbol, graph_df, self.side, option_type,
+                          sig_level, title=title, text=text, next_earnings=next_earnings)
 
 
 class DerivativeStrategySnapshot:
@@ -166,22 +183,121 @@ class DerivativeStrategySnapshot:
     self.sig_level = sig_level
     self.next_earnings = next_earnings
 
-  def graph_roi_vs_expiry(self, ax):
+  def _get_tooltip_map(self, xs, ys):
+
     target_colname = get_target_colname(self.sig_level)
 
-    rois = self.df['yoy_roi']
-    expirations = self.df['expiration_date']
     strikes = self.df['strike']
     bids = self.df['bid']
     deltas = self.df['delta']
     target_strikes = self.df[target_colname].round(2)
 
-    if len(expirations) == 0:
-      raise RuntimeError('No data to graph')
+    dtes = self.df['expiration_date'].apply(lambda d: (d - config.NOW).days + 1)
+    vols = self.df['smv_vol']
+    volumes = self.df['volume']
+    thetas = self.df['theta']
+    gammas = self.df['gamma']
+    vegas = self.df['vega']
+    move_edges = self.df['move_edge']
+    delta_edges = self.df['delta_edge']
+    low_52_edges = self.df['52_low_edge']
+    ma_200_edges = self.df['200_ma_edge']
+
+    tooltip_map = dict()
+
+    for i, xy in enumerate(zip(xs, ys)):
+      expiry, roi = xy
+      expiry_at = expiry.strftime(DATE_FORMAT)
+      dte = dtes.iloc[i]
+      target_strike = target_strikes.iloc[i]
+      strike = strikes.iloc[i]
+      bid = bids.iloc[i]
+      volume = volumes.iloc[i]
+      vol = vols.iloc[i].round(4)
+      delta = deltas.iloc[i].round(4)
+      theta = thetas.iloc[i].round(4)
+      gamma = gammas.iloc[i].round(4)
+      vega = vegas.iloc[i].round(4)
+      move_edge = move_edges.iloc[i].round(4)
+      delta_edge = delta_edges.iloc[i].round(4)
+      low_52_edge = low_52_edges.iloc[i].round(4)
+      ma_200_edge = ma_200_edges.iloc[i].round(4)
+      key = (expiry_at, roi)
+
+      tooltip_map[key] = dict(
+        dte=dte,
+        target_strike=target_strike,
+        strike=strike,
+        bid=bid,
+        volume=volume,
+        vol=vol,
+        delta=delta,
+        theta=theta,
+        gamma=gamma,
+        vega=vega,
+        move_edge=move_edge,
+        delta_edge=delta_edge,
+        low_52_edge=low_52_edge,
+        ma_200_edge=ma_200_edge
+      )
+
+    return tooltip_map
+
+  def _make_tooltip_text(self, tooltip_map, key):
+      expiry_at, roi = key
+      tooltip_item = tooltip_map[key]
+      move_edge = tooltip_item['move_edge']
+      delta_edge = tooltip_item['delta_edge']
+      low_52_edge = tooltip_item['low_52_edge']
+      ma_200_edge = tooltip_item['ma_200_edge']
+      total_edge = round(move_edge + delta_edge + low_52_edge + ma_200_edge, 4)
+
+      text = '\n'.join([
+        f"expiry={expiry_at}",
+        f"dte={tooltip_item['dte']}",
+        f"target=${tooltip_item['target_strike']}",
+        f"strike=${tooltip_item['strike']}",
+        f"bid=${tooltip_item['bid']}",
+        f"volume={tooltip_item['volume']}",
+        f"vol={tooltip_item['vol']}",
+        f"delta={tooltip_item['delta']}",
+        f"theta={tooltip_item['theta']}",
+        f"gamma={tooltip_item['gamma']}",
+        f"vega={tooltip_item['vega']}",
+        f"move edge={move_edge}",
+        f"delta edge={delta_edge}",
+        f"52 low edge={low_52_edge}",
+        f"200 ma edge={ma_200_edge}",
+        f"total edge={total_edge}",
+      ])
+      return text
+
+  def _add_tooltip(self, cursor, tooltip_map):
+    @cursor.connect('add')
+    def on_add(sel):
+      expiry_at = mdates.num2date(sel.target[0]).strftime(DATE_FORMAT)
+      roi = sel.target[1]
+      key = (expiry_at, roi)
+
+      text = self._make_tooltip_text(tooltip_map, key)
+
+      sel.annotation.set(text=text)
+
+  def graph_roi_vs_expiry(self, ax):
+    target_colname = get_target_colname(self.sig_level)
 
     # Graph of ROI vs Expirations.
-    xs = pd.to_datetime(expirations)
-    ys = rois
+    xs = pd.to_datetime(self.df['expiration_date'])
+    ys = self.df['yoy_roi']
+
+    strikes = self.df['strike']
+    bids = self.df['bid']
+    deltas = self.df['delta']
+    target_strikes = self.df[target_colname].round(2)
+
+    if len(xs) == 0 or len(ys) == 0:
+      raise RuntimeError('No data to graph')
+
 #    ax.plot(xs, ys, linestyle='-', marker='o')
     scatter = ax.scatter(xs, ys)
     for x, y, strike, bid, delta in zip(xs, ys, strikes, bids, deltas):
@@ -195,48 +311,8 @@ class DerivativeStrategySnapshot:
     ax.set_xticklabels(xticklabels, rotation=30)
 
     cursor = mplcursors.cursor(scatter, hover=True)
-
-    dtes = self.df['expiration_date'].apply(lambda d: (d - config.NOW).days + 1)
-    vols = self.df['smv_vol']
-    volumes = self.df['volume']
-    thetas = self.df['theta']
-    gammas = self.df['gamma']
-    vegas = self.df['vega']
-    tooltip_map = dict()
-    for i, expiry in enumerate(xs):
-      expiry_at = expiry.strftime(DATE_FORMAT)
-      dte = dtes.iloc[i]
-      target_strike = target_strikes.iloc[i]
-      strike = strikes.iloc[i]
-      bid = bids.iloc[i]
-      volume = volumes.iloc[i]
-      vol = vols.iloc[i].round(4)
-      delta = deltas.iloc[i].round(4)
-      theta = thetas.iloc[i].round(4)
-      gamma = gammas.iloc[i].round(4)
-      vega = vegas.iloc[i].round(4)
-      tooltip_map[expiry_at] = (dte, target_strike, strike, bid, volume, vol, delta, theta, gamma, vega)
-
-    @cursor.connect('add')
-    def on_add(sel):
-      expiry_at = mdates.num2date(sel.target[0]).strftime(DATE_FORMAT)
-      roi = sel.target[1]
-      dte, target_strike, strike, bid, volume, vol, delta, theta, gamma, vega = tooltip_map[expiry_at]
-      text = '\n'.join([
-        f"expiry={expiry_at}",
-        f"dte={dte}",
-        f"target=${target_strike}",
-        f"strike=${strike}",
-        f"bid=${bid}",
-        f"volume={volume}",
-        f"vol={vol}",
-        f"delta={delta}",
-        f"theta={theta}",
-        f"gamma={gamma}",
-        f"vega={vega}"
-      ])
-
-      sel.annotation.set(text=text)
+    tooltip_map = self._get_tooltip_map(xs, ys)
+    self._add_tooltip(cursor, tooltip_map)
     
     yticks = [i/10 for i in range(0, 11)]
     ax.set_yticks(yticks)

@@ -31,10 +31,8 @@ def make_api_request(endpoint, params):
     )
     json_response = response.json()
     return json_response
-  except (MaxRetryError, NewConnectionError) as e:
-    print('Exception response header:\n', response.headers)
-    raise e
   except Exception as e:
+    print('Exception response header:\n', response.headers)
     raise e
 
 

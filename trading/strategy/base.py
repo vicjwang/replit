@@ -192,7 +192,7 @@ class DerivativeStrategySnapshot:
     deltas = self.df['delta']
     target_strikes = self.df[target_colname].round(2)
 
-    dtes = self.df['expiration_date'].apply(lambda d: (d - config.NOW).days + 1)
+    dtes = self.df['expiration_date'].dt.tz_localize(config.EASTERN_TIMEZONE).apply(lambda d: (d - config.NOW).days + 1)
     vols = self.df['smv_vol']
     volumes = self.df['volume']
     thetas = self.df['theta']

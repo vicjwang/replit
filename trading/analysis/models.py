@@ -21,7 +21,15 @@ from constants import (
   SIGMA_LOWER,
 )
 
-from utils import calc_target_price, strformat, get_tscore, is_market_hours
+from utils import (
+  calc_target_price,
+  strformat,
+  get_tscore,
+  is_weekend,
+  is_before_market_hours,
+  is_after_market_hours,
+  is_market_hours,
+)
 
 
 class PriceModel:
@@ -72,9 +80,14 @@ class PriceModel:
     return fetch_latest_price(self.symbol)
 
   def get_latest_change(self):
-    # NOTE: Assumes last row is always *yesterday's* date.
+    last_row = self.prices_df.iloc[-1]
+
+    if last_row['date'].replace(tzinfo=config.EASTERN_TIMEZONE).date() == config.NOW.date():
+      ref_price = last_row[self._COLNAME_OPEN]
+    else:
+      ref_price = last_row[self._COLNAME_CLOSE]
+
     latest_price = self.get_latest_price()
-    ref_price = self.prices_df.iloc[-1][self._COLNAME_CLOSE]
     return np.log(latest_price/ref_price)
 
   def get_daily_mean(self):

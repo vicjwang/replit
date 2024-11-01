@@ -1,4 +1,7 @@
 import pytest
+import config
+
+from datetime import datetime
 
 from unittest.mock import patch
 
@@ -28,15 +31,39 @@ class TestModel:
     result = model.get_ma(200)
     assert result == 320.99
 
-  @patch('analysis.models.is_market_hours', lambda: True)
-  def test_latest_change_during_market_hours(self, model):
-    result = model.get_latest_change()
-    # Snapshot was taken outside market hours so expect tiny difference.
-    assert round(result) == 0
-
-  def test_latest_change_outside_market_hours(self, model):
+  @patch('analysis.models.fetch_latest_price', lambda _: 260.96)
+  @patch('config.NOW', datetime(2024, 10, 26, 8, 00))  # NOTE: will not affect @cached()
+  def test_latest_change_weekend(self, model):
     result = model.get_latest_change()
     assert round(result, 4) == -0.0003
+
+  @patch('config.NOW', datetime(2024, 10, 24, 4, 00))  # NOTE: will not affect @cached()
+  def test_latest_change_before_market_stale_data(self, model):
+    result = model.get_latest_change()
+    assert round(result, 4) == -0.0003
+
+  @patch('config.NOW', datetime(2024, 10, 24, 11, 00))  # NOTE: will not affect @cached()
+  def test_latest_change_market_hours_stale_data(self, model):
+    result = model.get_latest_change()
+    assert round(result, 4) == -0.0003
+
+  @patch('analysis.models.fetch_latest_price', lambda _: 260.96)
+  @patch('config.NOW', datetime(2024, 10, 23, 11, 00))  # NOTE: will not affect @cached()
+  def test_latest_change_market_hours_fresh_data(self, model):
+    result = model.get_latest_change()
+    assert round(result, 4) == -0.0125
+
+  @patch('analysis.models.fetch_latest_price', lambda _: 260.96)
+  @patch('config.NOW', datetime(2024, 10, 24, 17, 00))  # NOTE: will not affect @cached()
+  def test_latest_change_after_hours_stale_data(self, model):
+    result = model.get_latest_change()
+    assert round(result, 4) == -0.0003
+
+  @patch('analysis.models.fetch_latest_price', lambda _: 260.96)
+  @patch('config.NOW', datetime(2024, 10, 23, 17, 00))  # NOTE: will not affect @cached()
+  def test_latest_change_after_hours_fresh_data(self, model):
+    result = model.get_latest_change()
+    assert round(result, 4) == -0.0125
 
   def test_start_date(self, model):
     result = model.start_date

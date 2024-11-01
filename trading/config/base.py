@@ -1,3 +1,5 @@
+import pytz
+
 from datetime import datetime
 
 
@@ -30,7 +32,8 @@ CACHE_DIR = './cache'
 TRADIER_THROTTLE_RATE = 119 # per minute
 TRADIER_THROTTLE_PERIOD = 61  # in seconds
 
-NOW = datetime.utcnow()
+EASTERN_TIMEZONE = pytz.timezone('America/New_York')
+NOW = datetime.utcnow().replace(tzinfo=pytz.UTC).astimezone(EASTERN_TIMEZONE)
 NUM_PARALLEL_JOBS = 4
 FORCE_REFRESH = False
 

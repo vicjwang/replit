@@ -1,3 +1,4 @@
+import pytz
 from datetime import datetime
 
 
@@ -15,6 +16,7 @@ SHOW_GRAPHS = False
 WORTHY_MIN_BID = 0.1
 
 # This cannot be patched at test runtime because @cached decorator is run once at definition time.
-NOW = datetime(2024, 10, 24)  # NOTE: UTC implicit but do not specify tzinfo on purpose.
+EASTERN_TIMEZONE = pytz.timezone('America/New_York')
+NOW = datetime(2024, 10, 24, tzinfo=EASTERN_TIMEZONE)
 
 FORCE_REFRESH = False

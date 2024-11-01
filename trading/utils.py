@@ -9,6 +9,10 @@ from datetime import datetime, timedelta, time
 from constants import DATE_FORMAT, EASTERN_TZ
 
 
+MARKET_OPEN = time(9, 30)
+MARKET_CLOSE = time(16, 00)
+
+
 def strformat(symbol, s):
     text = f"{symbol}: {s}"
     return text
@@ -58,11 +62,24 @@ def get_target_colname(sig_level, suffix='target'):
   return f"{round(sig_level, 3)}_{suffix}"
 
 
+def is_weekend():
+  return config.NOW.weekday() in (5, 6)
+
+
+def is_workday():
+  return config.NOW.weekday() in (0, 1, 2, 3, 4)
+
+
+def is_before_market_hours():
+  return config.NOW.time() < MARKET_OPEN and is_workday()
+
+
+def is_after_market_hours():
+  return MARKET_CLOSE < config.NOW.time() and is_workday()
+
+
 def is_market_hours():
-  # Market hours in UTC.
-  market_open = time(13, 30)
-  market_close = time(20, 0)
-  return config.NOW.weekday() in (0,1,2,3,4) and market_open <= config.NOW.time() <= market_close
+  return MARKET_OPEN < config.NOW.time() < MARKET_CLOSE and is_workday()
 
 
 def count_trading_days(expiry_on):

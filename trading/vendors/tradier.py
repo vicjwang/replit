@@ -29,10 +29,11 @@ def make_api_request(endpoint, params):
       params=params,
       headers={'Authorization': f'Bearer {TRADIER_API_KEY}', 'Accept': 'application/json'}
     )
+    if config.IS_DEBUG or config.IS_VERBOSE:
+      print('Exception response header:\n', response.headers)
     json_response = response.json()
     return json_response
   except Exception as e:
-    print('Exception response header:\n', response.headers)
     raise e
 
 
@@ -112,19 +113,18 @@ def fetch_earnings_dates(symbol, after:str=None):
       earnings_dates.add(begin_dt)
 
   ret = list(reversed(sorted(earnings_dates)))
-  return pd.to_datetime(ret)
+  return pd.to_datetime(ret).tz_localize(config.EASTERN_TIMEZONE)
 
 
 @cached()
 def fetch_past_earnings_dates(symbol, after=config.REGIME_START_DATE_DEFAULT):
   earnings_dates = fetch_earnings_dates(symbol, after=after)
-  return [x for x in earnings_dates if x < config.NOW]
+  return [x for x in earnings_dates if x.date() < config.NOW.date()]
 
 
 def fetch_next_earnings_date(symbol, after=config.REGIME_START_DATE_DEFAULT):
   earnings_dates = fetch_earnings_dates(symbol, after=after)
-  today = pd.Timestamp(config.NOW.date())
-  future_dates = [x for x in earnings_dates if x >= today]
+  future_dates = [x for x in earnings_dates if x.date() >= config.NOW.date()]
   ret = future_dates[-1]
   return ret
 

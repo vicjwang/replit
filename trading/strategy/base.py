@@ -120,11 +120,11 @@ class DerivativeStrategyBase:
     mask = option_type_mask & strike_mask & cash_mask & roi_mask & otm_only_mask
 
     if expiry_after:
-      start_mask = (graph_df['expiration_date'] > expiry_after)
+      start_mask = (graph_df['expiration_date'].dt.date > expiry_after.date())
       mask &= start_mask
     
     if expiry_before:
-      end_mask = (graph_df['expiration_date'] < expiry_before)
+      end_mask = (graph_df['expiration_date'].dt.date < expiry_before.date())
       mask &= end_mask
 
     graph_df = graph_df[mask].reset_index(drop=True)
@@ -287,7 +287,7 @@ class DerivativeStrategySnapshot:
     target_colname = get_target_colname(self.sig_level)
 
     # Graph of ROI vs Expirations.
-    xs = pd.to_datetime(self.df['expiration_date'])
+    xs = self.df['expiration_date']
     ys = self.df['yoy_roi']
 
     strikes = self.df['strike']
